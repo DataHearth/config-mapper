@@ -1,0 +1,34 @@
+storage:
+  # Where will be the tmp folder located ? [DEFAULT: MacOS($TMPDIR/config-mapper) | Linux(/tmp/config-mapper)]
+  location: /path/to/local/repository
+  git:
+    username: USERNAME
+    password: PASSWORD
+    repository: https://github.com/user/some-repo.git
+
+files:
+  - "~/.zshrc"
+
+folders:
+  - "~/.ssh"
+
+package-managers:
+  installation-order: ["homebrew"]
+  homebrew:
+    - bat
+    # - hexyl
+    # - fd
+    # - hyperfine
+    # - diskus
+    # - jq
+    # - k9s
+    # - go
+    # - starship
+    # - exa
+    # - httpie
+    # - neovim
+    # - nmap
+    # - pinentry
+    # - zsh
+
+  apt-get:
