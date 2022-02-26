@@ -85,6 +85,9 @@ func init() {
 
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(loadCmd)
+	rootCmd.AddCommand(saveCmd)
+	rootCmd.PersistentFlags().StringP("configuration-file", "c", "", "location of configuration file")
+	viper.BindPFlag("configuration-file", rootCmd.PersistentFlags().Lookup("configuration-file"))
 
 	loadCmd.PersistentFlags().Bool("disable-files", false, "files will be ignored")
 	loadCmd.PersistentFlags().Bool("disable-folders", false, "folders will be ignored")

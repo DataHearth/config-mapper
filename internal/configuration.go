@@ -3,6 +3,8 @@ package mapper
 import (
 	"fmt"
 	"os"
+	"path"
+	"strings"
 
 	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
@@ -54,11 +56,19 @@ func InitConfig() {
 		os.Exit(1)
 	}
 
-	if c := os.Getenv("CONFIG_MAPPER_CFG"); c != "" {
-		viper.AddConfigPath(c)
-	} else {
-		viper.AddConfigPath(h)
+	if c := viper.GetString("configuration-file"); c != "" {
+		if strings.Contains(c, ".yml") {
+			c = path.Dir(c)
+		}
+		viper.AddConfigPath(path.Dir(c))
 	}
+	if c := os.Getenv("CONFIG_MAPPER_CFG"); c != "" {
+		if strings.Contains(c, ".yml") {
+			c = path.Dir(c)
+		}
+		viper.AddConfigPath(c)
+	}
+	viper.AddConfigPath(h)
 
 	viper.SetConfigType("yml")
 	viper.SetConfigName(".config-mapper")
