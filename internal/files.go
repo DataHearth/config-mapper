@@ -51,7 +51,7 @@ func LoadFiles(files []ItemLocation, location string) error {
 
 		p.UpdateTitle(fmt.Sprintf("copying %s", src))
 
-		if err := createFile(src, dst); err != nil {
+		if err := copy(src, dst); err != nil {
 			pterm.Error.Println(fmt.Sprintf("failed to load file from \"%s\" to \"%s\": %v", src, dst, err))
 			haveErr = true
 			continue
@@ -104,7 +104,7 @@ func SaveFiles(files []ItemLocation, location string) error {
 			continue
 		}
 
-		if err := createFile(src, dst); err != nil {
+		if err := copy(src, dst); err != nil {
 			pterm.Error.Println(fmt.Sprintf("failed to load file from \"%s\" to \"%s\": %v", src, dst, err))
 			haveErr = true
 			continue
@@ -122,38 +122,26 @@ func SaveFiles(files []ItemLocation, location string) error {
 	return nil
 }
 
-func createFile(src, dst string) error {
-	buf := make([]byte, 4096)
-
+func copy(src, dst string) error {
 	s, err := os.Stat(src)
 	if err != nil {
 		return err
 	}
 
-	srcFile, err := os.Open(src)
+	in, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer in.Close()
 
-	dstFile, err := os.Create(dst)
+	out, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
+	defer out.Close()
 
-	for {
-		n, err := srcFile.Read(buf)
-		if err != nil && err != io.EOF {
-			return err
-		}
-		if n == 0 {
-			break
-		}
-
-		if _, err := dstFile.Write(buf[:n]); err != nil {
-			return err
-		}
+	if _, err := io.Copy(out, in); err != nil {
+		return err
 	}
 
 	if err := os.Chmod(dst, s.Mode()); err != nil {
