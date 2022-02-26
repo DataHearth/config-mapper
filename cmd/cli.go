@@ -60,20 +60,35 @@ var loadCmd = &cobra.Command{
 		}
 
 		if !viper.GetBool("disable-files") {
-			if err := mapper.LoadFiles(config.Files); err != nil {
+			if err := mapper.LoadFiles(config.Files, config.Storage.Location); err != nil {
 				errLogger.Printf(pterm.Red(fmt.Sprintf("error while loading files: %v\n", err)))
-				os.Exit(1)
-			}
-		}
-		if !viper.GetBool("disable-folders") {
-			if err := mapper.LoadFolders(config.Folders); err != nil {
-				errLogger.Printf(pterm.Red(fmt.Sprintf("error while loading folders: %v\n", err)))
 				os.Exit(1)
 			}
 		}
 		if !viper.GetBool("disable-pkgs") {
 			if err := mapper.LoadPkgs(config.PackageManagers); err != nil {
 				errLogger.Printf(pterm.Red(fmt.Sprintf("error while installing packages: %v\n", err)))
+				os.Exit(1)
+			}
+		}
+	},
+}
+var saveCmd = &cobra.Command{
+	Use:   "save",
+	Short: "save your configurations onto your saved location",
+	Long: `Save your files, folders and package managers deps configurations onto your
+		 saved location based on your configuration file`,
+	Run: func(cmd *cobra.Command, args []string) {
+		var config mapper.Configuration
+
+		if err := viper.Unmarshal(&config); err != nil {
+			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to decode configuration: %v\n", err)))
+			os.Exit(1)
+		}
+
+		if !viper.GetBool("disable-files") {
+			if err := mapper.SaveFiles(config.Files, config.Storage.Location); err != nil {
+				errLogger.Printf(pterm.Red(fmt.Sprintf("error while loading files: %v\n", err)))
 				os.Exit(1)
 			}
 		}
@@ -92,10 +107,16 @@ func init() {
 	loadCmd.PersistentFlags().Bool("disable-files", false, "files will be ignored")
 	loadCmd.PersistentFlags().Bool("disable-folders", false, "folders will be ignored")
 	loadCmd.PersistentFlags().Bool("disable-pkgs", false, "package managers will be ignored")
-
 	viper.BindPFlag("disable-files", loadCmd.PersistentFlags().Lookup("disable-files"))
 	viper.BindPFlag("disable-folders", loadCmd.PersistentFlags().Lookup("disable-folders"))
 	viper.BindPFlag("disable-pkgs", loadCmd.PersistentFlags().Lookup("disable-pkgs"))
+
+	saveCmd.PersistentFlags().Bool("disable-files", false, "files will be ignored")
+	saveCmd.PersistentFlags().Bool("disable-folders", false, "folders will be ignored")
+	saveCmd.PersistentFlags().Bool("disable-pkgs", false, "package managers will be ignored")
+	viper.BindPFlag("disable-files", saveCmd.PersistentFlags().Lookup("disable-files"))
+	viper.BindPFlag("disable-folders", saveCmd.PersistentFlags().Lookup("disable-folders"))
+	viper.BindPFlag("disable-pkgs", saveCmd.PersistentFlags().Lookup("disable-pkgs"))
 }
 
 func Execute() {
