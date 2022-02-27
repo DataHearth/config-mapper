@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
@@ -27,9 +28,9 @@ type Storage struct {
 }
 
 type Git struct {
-	SSH        Ssh       `mapstructure:"ssh" yaml:"ssh"`
-	BasicAuth  BasicAuth `mapstructure:"basic-auth" yaml:"basic-auth"`
 	Repository string    `mapstructure:"repository" yaml:"repository"`
+	BasicAuth  BasicAuth `mapstructure:"basic-auth" yaml:"basic-auth"`
+	SSH        Ssh       `mapstructure:"ssh" yaml:"ssh"`
 }
 
 type BasicAuth struct {
@@ -38,8 +39,8 @@ type BasicAuth struct {
 }
 
 type Ssh struct {
-	Passphrase string `mapstructure:"passphrase" yaml:"passphrase"`
 	PrivateKey string `mapstructure:"private-key" yaml:"private-key"`
+	Passphrase string `mapstructure:"passphrase" yaml:"passphrase"`
 }
 
 type PkgManagers struct {
@@ -56,10 +57,18 @@ func InitConfig() {
 	}
 
 	if c := viper.GetString("configuration-file"); c != "" {
-		viper.AddConfigPath(path.Dir(c))
+		if strings.Contains(c, ".yml") {
+			viper.AddConfigPath(path.Dir(c))
+		} else {
+			viper.AddConfigPath(c)
+		}
 	}
 	if c := os.Getenv("CONFIG_MAPPER_CFG"); c != "" {
-		viper.AddConfigPath(c)
+		if strings.Contains(c, ".yml") {
+			viper.AddConfigPath(path.Dir(c))
+		} else {
+			viper.AddConfigPath(c)
+		}
 	}
 	viper.AddConfigPath(h)
 
@@ -78,4 +87,6 @@ func InitConfig() {
 
 		os.Exit(1)
 	}
+
+	viper.Set("configuration-file", viper.ConfigFileUsed())
 }

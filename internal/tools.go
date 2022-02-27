@@ -89,12 +89,12 @@ func configPaths(f ItemLocation, location string) (string, string, error) {
 
 	switch runtime.GOOS {
 	case "linux":
-		dst, src, err = getPaths(f.Linux, location)
+		src, dst, err = getPaths(f.Linux, location)
 		if err != nil {
 			return "", "", err
 		}
 	case "darwin":
-		dst, src, err = getPaths(f.Darwin, location)
+		src, dst, err = getPaths(f.Darwin, location)
 		if err != nil {
 			return "", "", err
 		}
