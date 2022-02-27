@@ -105,6 +105,15 @@ config-mapper load
 
 The same ignore flags are used in the `save` command.
 
+## TO-DO
+
+- [] load configuration though SSH
+- [] save configuration though SSH
+- add more storage options
+  - [] smb storage
+  - [] nfs storage
+  - [] zip
+
 ## Known issues
 
 - GitHub SSH repository url: `ssh: handshake failed: knownhosts: key mismatch`
