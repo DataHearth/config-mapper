@@ -104,3 +104,31 @@ func configPaths(f ItemLocation, location string) (string, string, error) {
 
 	return src, dst, nil
 }
+
+func copyFolder(src, dst string) error {
+	items, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	for _, i := range items {
+		itemName := i.Name()
+		srcItem := fmt.Sprintf("%s/%s", src, itemName)
+		dstItem := fmt.Sprintf("%s/%s", dst, itemName)
+
+		if i.IsDir() {
+			if err := os.Mkdir(dstItem, i.Type().Perm()); err != nil {
+				return err
+			}
+			if err := copyFolder(srcItem, dstItem); err != nil {
+				return err
+			}
+		}
+
+		if err := copyFile(srcItem, dstItem); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

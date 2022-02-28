@@ -59,18 +59,20 @@ var loadCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		el := mapper.NewElement([]mapper.ItemLocation{}, config.Storage.Location)
+
 		if !viper.GetBool("load-disable-files") {
-			if err := mapper.LoadFiles(config.Files, config.Storage.Location); err != nil {
-				errLogger.Printf(pterm.Red(err))
-				os.Exit(1)
-			}
+			el.AddItems(config.Files)
 		}
 		if !viper.GetBool("load-disable-folders") {
-			if err := mapper.LoadFolders(config.Folders, config.Storage.Location); err != nil {
-				errLogger.Printf(pterm.Red(err))
-				os.Exit(1)
-			}
+			el.AddItems(config.Folders)
 		}
+
+		if err := el.Action("load"); err != nil {
+			errLogger.Printf(pterm.Red(err))
+			os.Exit(1)
+		}
+
 		if !viper.GetBool("load-disable-pkgs") {
 			if err := mapper.LoadPkgs(config.PackageManagers); err != nil {
 				errLogger.Printf(pterm.Red(err))
@@ -92,18 +94,20 @@ var saveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		el := mapper.NewElement([]mapper.ItemLocation{}, config.Storage.Location)
+
 		if !viper.GetBool("save-disable-files") {
-			if err := mapper.SaveFiles(config.Files, config.Storage.Location); err != nil {
-				errLogger.Printf(pterm.Red(err))
-				os.Exit(1)
-			}
+			el.AddItems(config.Files)
 		}
 		if !viper.GetBool("save-disable-folders") {
-			if err := mapper.SaveFolders(config.Folders, config.Storage.Location); err != nil {
-				errLogger.Printf(pterm.Red(err))
-				os.Exit(1)
-			}
+			el.AddItems(config.Folders)
 		}
+
+		if err := el.Action("save"); err != nil {
+			errLogger.Printf(pterm.Red(err))
+			os.Exit(1)
+		}
+
 		if !viper.GetBool("save-disable-pkgs") {
 			if err := mapper.SavePkgs(config); err != nil {
 				errLogger.Printf(pterm.Red(err))
