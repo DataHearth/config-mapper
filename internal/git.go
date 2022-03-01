@@ -37,6 +37,13 @@ type author struct {
 
 func NewRepository(config Git, repoPath string) (RepositoryActions, error) {
 	var auth transport.AuthMethod
+	if config.URL == "" {
+		return nil, errors.New("a repository URI is needed (either using GIT protocol or HTTPS)")
+	}
+	repoPath, err := absolutePath(repoPath)
+	if err != nil {
+		return nil, err
+	}
 
 	if config.SSH.Passphrase != "" && config.SSH.PrivateKey != "" {
 		privateKey, err := absolutePath(config.SSH.PrivateKey)
@@ -63,6 +70,7 @@ func NewRepository(config Git, repoPath string) (RepositoryActions, error) {
 		auth:       auth,
 		repository: nil,
 		repoPath:   repoPath,
+		url:        config.URL,
 		author: author{
 			name:  config.Name,
 			email: config.Email,
