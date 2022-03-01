@@ -3,6 +3,7 @@ package mapper
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -123,17 +124,28 @@ func (r *Repository) PushChanges(msg string) error {
 		return err
 	}
 
-	if _, err := w.Add("."); err != nil {
-		return err
+	// TODO: debug why deleted files/folders aren't added to index
+	// if err := w.AddWithOptions(&git.AddOptions{
+	// 	All: true,
+	// }); err != nil {
+	// 	return err
+	// }
+
+	cmd := exec.Command("git", "add", ".")
+	cmd.Dir = r.repoPath
+	if err := cmd.Run(); err != nil {
+		return errors.New("failed to add files to git index: " + err.Error())
 	}
 
-	w.Commit(msg, &git.CommitOptions{
+	if _, err := w.Commit(msg, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  r.author.name,
 			Email: r.author.email,
 			When:  time.Now(),
 		},
-	})
+	}); err != nil {
+		return err
+	}
 
 	return r.repository.Push(&git.PushOptions{})
 }
