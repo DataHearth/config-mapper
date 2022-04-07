@@ -3,4 +3,6 @@
 .gitignore
 LICENSE
 README.md
-demo
+CHANGELOG.md
+.chglog
+build

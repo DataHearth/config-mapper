@@ -107,12 +107,12 @@ The same ignore flags are used in the `save` command.
 
 ## TO-DO
 
-- [] load configuration though SSH
-- [] save configuration though SSH
+- [ ] load configuration though SSH
+- [ ] save configuration though SSH
 - add more storage options
-  - [] smb storage
-  - [] nfs storage
-  - [] zip
+  - [ ] smb storage
+  - [ ] nfs storage
+  - [ ] zip
 
 ## Known issues
 
