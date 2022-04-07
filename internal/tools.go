@@ -144,5 +144,5 @@ func copyFolder(src, dst string) error {
 }
 
 func PrintError(err string, values ...interface{}) {
-	color.Error.Write([]byte(fmt.Sprintf(err, values...)))
+	color.Error.Write([]byte(color.RedString(err+"\n", values...)))
 }
