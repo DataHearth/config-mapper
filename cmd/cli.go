@@ -1,14 +1,13 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"time"
 
 	mapper "github.com/datahearth/config-mapper/internal"
-	"github.com/pterm/pterm"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -34,14 +33,14 @@ var initCmd = &cobra.Command{
 		var config mapper.Configuration
 
 		if err := viper.Unmarshal(&config); err != nil {
-			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to decode configuration: %v\n", err)))
+			mapper.PrintError("failed to decode configuration: %v\n", err)
 			os.Exit(1)
 		}
 
 		logger.Println("initializing config-mapper folder from configuration...")
 
 		if _, err := mapper.NewRepository(config.Storage.Git, config.Storage.Path); err != nil {
-			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to initialize folder: %v\n", err)))
+			mapper.PrintError("failed to initialize folder: %v\n", err)
 			os.Exit(1)
 		}
 
@@ -54,30 +53,38 @@ var loadCmd = &cobra.Command{
 	Long: `Load your files, folders and package managers deps configurations onto your new
 		onto your new system based on your configuration file`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var config mapper.Configuration
-
-		if err := viper.Unmarshal(&config); err != nil {
-			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to decode configuration: %v\n", err)))
+		var c mapper.Configuration
+		if err := viper.Unmarshal(&c); err != nil {
+			mapper.PrintError("failed to decode configuration: %v\n", err)
 			os.Exit(1)
 		}
 
-		el := mapper.NewElement([]mapper.ItemLocation{}, config.Storage.Path)
+		i, err := mapper.NewIndexer(c.Storage.Path)
+		if err != nil {
+			mapper.PrintError("failed to open the indexer: %v\n", err)
+			os.Exit(1)
+		}
+
+		r, err := mapper.NewRepository(c.Storage.Git, c.Storage.Path)
+		if err != nil {
+			mapper.PrintError("failed to open repository at %s: %v\n", c.Storage.Path, err)
+			os.Exit(1)
+		}
+
+		el := mapper.NewItemsActions(nil, c.Storage.Path, r, i)
 
 		if !viper.GetBool("load-disable-files") {
-			el.AddItems(config.Files)
+			el.AddItems(c.Files)
 		}
 		if !viper.GetBool("load-disable-folders") {
-			el.AddItems(config.Folders)
+			el.AddItems(c.Folders)
 		}
 
-		if err := el.Action("load"); err != nil {
-			errLogger.Printf(pterm.Red(err))
-			os.Exit(1)
-		}
+		el.Action("load")
 
 		if !viper.GetBool("load-disable-pkgs") {
-			if err := mapper.LoadPkgs(config.PackageManagers); err != nil {
-				errLogger.Printf(pterm.Red(err))
+			if err := mapper.LoadPkgs(c.PackageManagers); err != nil {
+				mapper.PrintError(err.Error())
 				os.Exit(1)
 			}
 		}
@@ -89,50 +96,56 @@ var saveCmd = &cobra.Command{
 	Long: `Save your files, folders and package managers deps configurations onto your
 		 saved location based on your configuration file`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var config mapper.Configuration
-		if err := viper.Unmarshal(&config); err != nil {
-			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to decode configuration: %v\n", err)))
+		var c mapper.Configuration
+		if err := viper.Unmarshal(&c); err != nil {
+			mapper.PrintError("failed to decode configuration: %v\n", err)
 			os.Exit(1)
 		}
 
-		repo, err := mapper.NewRepository(config.Storage.Git, config.Storage.Path)
+		indexer, err := mapper.NewIndexer(c.Storage.Path)
 		if err != nil {
-			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to open repository at %s: %v\n", config.Storage.Path, err)))
+			mapper.PrintError("failed to open the indexer: %v\n", err)
 			os.Exit(1)
 		}
-		el := mapper.NewElement([]mapper.ItemLocation{}, config.Storage.Path)
+
+		r, err := mapper.NewRepository(c.Storage.Git, c.Storage.Path)
+		if err != nil {
+			mapper.PrintError("failed to open repository at %s: %v\n", c.Storage.Path, err)
+			os.Exit(1)
+		}
+
+		el := mapper.NewItemsActions(nil, c.Storage.Path, r, indexer)
 
 		if !viper.GetBool("save-disable-files") {
-			el.AddItems(config.Files)
+			el.AddItems(c.Files)
 		}
 		if !viper.GetBool("save-disable-folders") {
-			el.AddItems(config.Folders)
+			el.AddItems(c.Folders)
 		}
 
-		if err := el.Action("save"); err != nil {
-			errLogger.Printf(pterm.Red(err))
-			os.Exit(1)
-		}
+		el.Action("save")
 
 		if !viper.GetBool("save-disable-pkgs") {
-			if err := mapper.SavePkgs(config); err != nil {
-				errLogger.Printf(pterm.Red(err))
+			if err := mapper.SavePkgs(c); err != nil {
+				mapper.PrintError(err.Error())
 				os.Exit(1)
 			}
+		}
+
+		if err := el.CleanUp(indexer.RemovedLines()); err != nil {
+			mapper.PrintError("failed to clean repository: %v\n", err)
+			os.Exit(1)
 		}
 
 		if viper.GetBool("push") {
-			pterm.DefaultSection.Println("Pushing items")
+			color.Blue("# Pushing items")
 
-			s, _ := pterm.DefaultSpinner.WithShowTimer(true).WithRemoveWhenDone(false).Start("Pushing changes to remote repository")
-
-			if err := repo.PushChanges(viper.GetString("message")); err != nil {
-				errLogger.Printf(pterm.Red(fmt.Sprintf("failed to push changes to repository: %v\n", err)))
+			if err := r.PushChanges(viper.GetString("message"), indexer.Lines(), indexer.RemovedLines()); err != nil {
+				mapper.PrintError("failed to push changes to repository: %v\n", err)
 				os.Exit(1)
 			}
 
-			s.Stop()
-			s.Success("Changes pushed")
+			color.Green("Items pushed")
 		}
 	},
 }
@@ -158,10 +171,12 @@ func init() {
 	saveCmd.PersistentFlags().Bool("disable-pkgs", false, "package managers will be ignored")
 	saveCmd.Flags().BoolP("push", "p", false, "new configurations will be committed and pushed")
 	saveCmd.Flags().StringP("message", "m", strconv.FormatInt(time.Now().Unix(), 10), "combined with --push to set a commit message")
+	saveCmd.Flags().Bool("disable-index", false, "configuration index will not be updated")
 	viper.BindPFlag("save-disable-files", saveCmd.PersistentFlags().Lookup("disable-files"))
 	viper.BindPFlag("save-disable-folders", saveCmd.PersistentFlags().Lookup("disable-folders"))
 	viper.BindPFlag("save-disable-pkgs", saveCmd.PersistentFlags().Lookup("disable-pkgs"))
 	viper.BindPFlag("push", saveCmd.Flags().Lookup("push"))
+	viper.BindPFlag("disable-index-update", saveCmd.Flags().Lookup("disable-index"))
 	viper.BindPFlag("message", saveCmd.Flags().Lookup("message"))
 }
 

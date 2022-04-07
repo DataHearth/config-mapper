@@ -3,7 +3,6 @@ package mapper
 import (
 	"errors"
 	"os"
-	"os/exec"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -19,7 +18,9 @@ var (
 )
 
 type RepositoryActions interface {
-	PushChanges(msg string) error
+	PushChanges(msg string, newLines, removedLines []string) error
+	GetWorktree() (*git.Worktree, error)
+	GetAuthor() *object.Signature
 	openRepository() error
 }
 
@@ -114,38 +115,61 @@ func (r *Repository) openRepository() error {
 		return err
 	}
 
+	w, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	err = w.Pull(&git.PullOptions{
+		Auth: r.auth,
+	})
+	if err != nil && err != git.NoErrAlreadyUpToDate {
+		return err
+	}
+
 	r.repository = repo
 	return nil
 }
 
-func (r *Repository) PushChanges(msg string) error {
+func (r *Repository) PushChanges(msg string, newLines, removedLines []string) error {
 	w, err := r.repository.Worktree()
 	if err != nil {
 		return err
 	}
 
-	// TODO: debug why deleted files/folders aren't added to index
-	// if err := w.AddWithOptions(&git.AddOptions{
-	// 	All: true,
+	for _, l := range newLines {
+		if err := w.AddWithOptions(&git.AddOptions{
+			Path: l,
+		}); err != nil {
+			return err
+		}
+	}
+	for _, l := range removedLines {
+		if err := w.AddWithOptions(&git.AddOptions{
+			Path: l,
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+	// if _, err := w.Commit(msg, &git.CommitOptions{
+	// 	Author: r.GetAuthor(),
 	// }); err != nil {
 	// 	return err
 	// }
 
-	cmd := exec.Command("git", "add", ".")
-	cmd.Dir = r.repoPath
-	if err := cmd.Run(); err != nil {
-		return errors.New("failed to add files to git index: " + err.Error())
-	}
+	// return r.repository.Push(&git.PushOptions{})
+}
 
-	if _, err := w.Commit(msg, &git.CommitOptions{
-		Author: &object.Signature{
-			Name:  r.author.name,
-			Email: r.author.email,
-			When:  time.Now(),
-		},
-	}); err != nil {
-		return err
-	}
+func (r *Repository) GetWorktree() (*git.Worktree, error) {
+	return r.repository.Worktree()
+}
 
-	return r.repository.Push(&git.PushOptions{})
+func (r *Repository) GetAuthor() *object.Signature {
+	return &object.Signature{
+		Name:  r.author.name,
+		Email: r.author.email,
+		When:  time.Now(),
+	}
 }
