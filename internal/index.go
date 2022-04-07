@@ -86,9 +86,10 @@ func (i *Index) filter(newLines []string) map[string]bool {
 func (i *Index) Write(newLines []string) error {
 	lines := i.filter(newLines)
 
+	linesNumber := len(lines)
 	var data []byte
 	index := 0
-	linesNumber := len(lines)
+	i.lines = []string{}
 	for path := range lines {
 		if index+1 == linesNumber {
 			data = append(data, []byte(fmt.Sprint(path))...)
@@ -97,6 +98,7 @@ func (i *Index) Write(newLines []string) error {
 		}
 
 		index += 1
+		i.lines = append(i.lines, path)
 	}
 
 	os.WriteFile(i.path, data, i.perms)
