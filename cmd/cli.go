@@ -29,125 +29,21 @@ var initCmd = &cobra.Command{
 	Short: "Initialize your configuration folder",
 	Long: `Initialize will retrieve your configuration folder from the source location and
 		copy it into the destination field`,
-	Run: func(cmd *cobra.Command, args []string) {
-		var config mapper.Configuration
-
-		if err := viper.Unmarshal(&config); err != nil {
-			mapper.PrintError("failed to decode configuration: %v\n", err)
-			os.Exit(1)
-		}
-
-		logger.Println("initializing config-mapper folder from configuration...")
-
-		if _, err := mapper.NewRepository(config.Storage.Git, config.Storage.Path); err != nil {
-			mapper.PrintError("failed to initialize folder: %v\n", err)
-			os.Exit(1)
-		}
-
-		logger.Printf("repository initialized at \"%v\"\n", viper.GetString("storage.location"))
-	},
+	Run: initCommand,
 }
 var loadCmd = &cobra.Command{
 	Use:   "load",
 	Short: "Load your configurations onto your system",
 	Long: `Load your files, folders and package managers deps configurations onto your new
 		onto your new system based on your configuration file`,
-	Run: func(cmd *cobra.Command, args []string) {
-		var c mapper.Configuration
-		if err := viper.Unmarshal(&c); err != nil {
-			mapper.PrintError("failed to decode configuration: %v\n", err)
-			os.Exit(1)
-		}
-
-		i, err := mapper.NewIndexer(c.Storage.Path)
-		if err != nil {
-			mapper.PrintError("failed to open the indexer: %v\n", err)
-			os.Exit(1)
-		}
-
-		r, err := mapper.NewRepository(c.Storage.Git, c.Storage.Path)
-		if err != nil {
-			mapper.PrintError("failed to open repository at %s: %v\n", c.Storage.Path, err)
-			os.Exit(1)
-		}
-
-		el := mapper.NewItemsActions(nil, c.Storage.Path, r, i)
-
-		if !viper.GetBool("load-disable-files") {
-			el.AddItems(c.Files)
-		}
-		if !viper.GetBool("load-disable-folders") {
-			el.AddItems(c.Folders)
-		}
-
-		el.Action("load")
-
-		if !viper.GetBool("load-disable-pkgs") {
-			if err := mapper.LoadPkgs(c.PackageManagers); err != nil {
-				mapper.PrintError(err.Error())
-				os.Exit(1)
-			}
-		}
-	},
+	Run: load,
 }
 var saveCmd = &cobra.Command{
 	Use:   "save",
 	Short: "save your configurations onto your saved location",
 	Long: `Save your files, folders and package managers deps configurations onto your
 		 saved location based on your configuration file`,
-	Run: func(cmd *cobra.Command, args []string) {
-		var c mapper.Configuration
-		if err := viper.Unmarshal(&c); err != nil {
-			mapper.PrintError("failed to decode configuration: %v\n", err)
-			os.Exit(1)
-		}
-
-		indexer, err := mapper.NewIndexer(c.Storage.Path)
-		if err != nil {
-			mapper.PrintError("failed to open the indexer: %v\n", err)
-			os.Exit(1)
-		}
-
-		r, err := mapper.NewRepository(c.Storage.Git, c.Storage.Path)
-		if err != nil {
-			mapper.PrintError("failed to open repository at %s: %v\n", c.Storage.Path, err)
-			os.Exit(1)
-		}
-
-		el := mapper.NewItemsActions(nil, c.Storage.Path, r, indexer)
-
-		if !viper.GetBool("save-disable-files") {
-			el.AddItems(c.Files)
-		}
-		if !viper.GetBool("save-disable-folders") {
-			el.AddItems(c.Folders)
-		}
-
-		el.Action("save")
-
-		if !viper.GetBool("save-disable-pkgs") {
-			if err := mapper.SavePkgs(c); err != nil {
-				mapper.PrintError(err.Error())
-				os.Exit(1)
-			}
-		}
-
-		if err := el.CleanUp(indexer.RemovedLines()); err != nil {
-			mapper.PrintError("failed to clean repository: %v\n", err)
-			os.Exit(1)
-		}
-
-		if viper.GetBool("push") {
-			color.Blue("# Pushing items")
-
-			if err := r.PushChanges(viper.GetString("message"), indexer.Lines(), indexer.RemovedLines()); err != nil {
-				mapper.PrintError("failed to push changes to repository: %v\n", err)
-				os.Exit(1)
-			}
-
-			color.Green("Items pushed")
-		}
-	},
+	Run: save,
 }
 
 func init() {
@@ -185,4 +81,114 @@ func Execute() {
 		errLogger.Printf("an error occured while running command: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func save(cmd *cobra.Command, args []string) {
+	var c mapper.Configuration
+	if err := viper.Unmarshal(&c); err != nil {
+		mapper.PrintError("failed to decode configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	indexer, err := mapper.NewIndexer(c.Storage.Path)
+	if err != nil {
+		mapper.PrintError("failed to open the indexer: %v\n", err)
+		os.Exit(1)
+	}
+
+	r, err := mapper.NewRepository(c.Storage.Git, c.Storage.Path)
+	if err != nil {
+		mapper.PrintError("failed to open repository at %s: %v\n", c.Storage.Path, err)
+		os.Exit(1)
+	}
+
+	el := mapper.NewItemsActions(nil, c.Storage.Path, r, indexer)
+
+	if !viper.GetBool("save-disable-files") {
+		el.AddItems(c.Files)
+	}
+	if !viper.GetBool("save-disable-folders") {
+		el.AddItems(c.Folders)
+	}
+
+	el.Action("save")
+
+	if !viper.GetBool("save-disable-pkgs") {
+		if err := mapper.SavePkgs(c); err != nil {
+			mapper.PrintError(err.Error())
+			os.Exit(1)
+		}
+	}
+
+	if err := el.CleanUp(indexer.RemovedLines()); err != nil {
+		mapper.PrintError("failed to clean repository: %v\n", err)
+		os.Exit(1)
+	}
+
+	if viper.GetBool("push") {
+		color.Blue("# Pushing items")
+
+		if err := r.PushChanges(viper.GetString("message"), indexer.Lines(), indexer.RemovedLines()); err != nil {
+			mapper.PrintError("failed to push changes to repository: %v\n", err)
+			os.Exit(1)
+		}
+
+		color.Green("Items pushed")
+	}
+}
+
+func load(cmd *cobra.Command, args []string) {
+	var c mapper.Configuration
+	if err := viper.Unmarshal(&c); err != nil {
+		mapper.PrintError("failed to decode configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	i, err := mapper.NewIndexer(c.Storage.Path)
+	if err != nil {
+		mapper.PrintError("failed to open the indexer: %v\n", err)
+		os.Exit(1)
+	}
+
+	r, err := mapper.NewRepository(c.Storage.Git, c.Storage.Path)
+	if err != nil {
+		mapper.PrintError("failed to open repository at %s: %v\n", c.Storage.Path, err)
+		os.Exit(1)
+	}
+
+	el := mapper.NewItemsActions(nil, c.Storage.Path, r, i)
+
+	if !viper.GetBool("load-disable-files") {
+		el.AddItems(c.Files)
+	}
+	if !viper.GetBool("load-disable-folders") {
+		el.AddItems(c.Folders)
+	}
+
+	el.Action("load")
+
+	if !viper.GetBool("load-disable-pkgs") {
+		if err := mapper.LoadPkgs(c.PackageManagers); err != nil {
+			mapper.PrintError(err.Error())
+			os.Exit(1)
+		}
+	}
+}
+
+func initCommand(cmd *cobra.Command, args []string) {
+	var config mapper.Configuration
+
+	if err := viper.Unmarshal(&config); err != nil {
+		mapper.PrintError("failed to decode configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	logger.Println("initializing config-mapper folder from configuration...")
+
+	if _, err := mapper.NewRepository(config.Storage.Git, config.Storage.Path); err != nil {
+		mapper.PrintError("failed to initialize folder: %v\n", err)
+		os.Exit(1)
+	}
+
+	logger.Printf("repository initialized at \"%v\"\n", viper.GetString("storage.location"))
 }
