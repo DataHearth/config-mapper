@@ -12,7 +12,7 @@ import (
 )
 
 type Items struct {
-	locations  []ItemLocation
+	locations  []OSLocation
 	storage    string
 	repository RepositoryActions
 	indexer    Indexer
@@ -20,13 +20,13 @@ type Items struct {
 
 type ItemsActions interface {
 	Action(action string)
-	AddItems(items []ItemLocation)
+	AddItems(items []OSLocation)
 	CleanUp(removedLines []string) error
 }
 
-func NewItemsActions(items []ItemLocation, storage string, repository RepositoryActions, indexer Indexer) ItemsActions {
+func NewItemsActions(items []OSLocation, storage string, repository RepositoryActions, indexer Indexer) ItemsActions {
 	if items == nil {
-		items = []ItemLocation{}
+		items = []OSLocation{}
 	}
 
 	return &Items{
@@ -37,79 +37,35 @@ func NewItemsActions(items []ItemLocation, storage string, repository Repository
 	}
 }
 
-func (e *Items) Action(a string) {
-	color.Blue("# %s", a)
+func (e *Items) Action(action string) {
+	color.Blue("# %s", action)
 	newLines := []string{}
 
 	for i, l := range e.locations {
-		var src, dst string
+		var src string
 		storagePath, systemPath, err := configPaths(l, e.storage)
 		if err != nil {
 			PrintError("[%d] failed to resolve item paths \"%v\": %v", i, l, err)
 			continue
 		}
 
-		if a == "save" {
+		if action == "save" {
 			src = systemPath
-			dst = storagePath
+
+			if newItem := e.saveItem(systemPath, storagePath, i); newItem != "" {
+				newLines = append(newLines, newItem)
+			} else {
+				continue
+			}
 		} else {
 			src = storagePath
-			dst = systemPath
-		}
-
-		if err := os.MkdirAll(path.Dir(dst), 0755); err != nil {
-			PrintError("[%d] failed to create directory architecture for destination path \"%s\": %v", i, path.Dir(dst), err)
-			continue
-		}
-
-		s, err := os.Stat(src)
-		if err != nil {
-			PrintError("[%d] failed to check if source path is a folder \"%s\": %v", i, src, err)
-			continue
-		}
-
-		if s.IsDir() {
-			dstPerms := fs.FileMode(0755)
-			s, err := os.Stat(dst)
-			if err != nil {
-				if !os.IsNotExist(err) {
-					PrintError("[%d] failed to check if destination folder \"%s\" exists: %v", i, dst, err)
-					continue
-				}
-			} else {
-				dstPerms = s.Mode()
-			}
-
-			if err := os.Mkdir(dst, dstPerms); err != nil {
-				if !os.IsExist(err) {
-					PrintError("[%d] failed to create destination folder \"%s\": %v", i, dst, err)
-					continue
-				}
-			}
-			if err := copyFolder(src, dst); err != nil {
-				PrintError("[%d] failed to %s folder from \"%s\" to \"%s\": %v", i, a, src, dst, err)
-				continue
-			}
-		} else {
-			if err := copyFile(src, dst); err != nil {
-				PrintError("[%d] failed to %s file from \"%s\" to \"%s\": %v", i, a, src, dst, err)
-				continue
-			}
-		}
-
-		if a == "save" {
-			p, err := absolutePath(e.storage)
-			if err != nil {
-				PrintError("[%d] failed resolve absolute path from configuration storage: %v", i, err)
-				continue
-			}
-			newLines = append(newLines, strings.ReplaceAll(dst, p+"/", ""))
+			e.loadItem(storagePath, systemPath, i)
 		}
 
 		color.Green("[%d] %s copied", i, src)
 	}
 
-	if a == "save" && !viper.GetBool("disable-index-update") {
+	if action == "save" && !viper.GetBool("disable-index-update") {
 		if err := e.indexer.Write(newLines); err != nil {
 			PrintError(err.Error())
 			os.Exit(1)
@@ -117,7 +73,99 @@ func (e *Items) Action(a string) {
 	}
 }
 
-func (e *Items) AddItems(items []ItemLocation) {
+func (e *Items) saveItem(src, dst string, index int) string {
+	if err := os.MkdirAll(path.Dir(dst), 0755); err != nil {
+		PrintError("[%d] failed to create directory architecture for destination path \"%s\": %v", index, path.Dir(dst), err)
+		return ""
+	}
+
+	s, err := os.Stat(src)
+	if err != nil {
+		PrintError("[%d] failed to check if source path is a folder \"%s\": %v", index, src, err)
+		return ""
+	}
+
+	if s.IsDir() {
+		dstPerms := fs.FileMode(0755)
+		s, err := os.Stat(dst)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				PrintError("[%d] failed to check if destination folder \"%s\" exists: %v", index, dst, err)
+				return ""
+			}
+		} else {
+			dstPerms = s.Mode()
+		}
+
+		if err := os.Mkdir(dst, dstPerms); err != nil {
+			if !os.IsExist(err) {
+				PrintError("[%d] failed to create destination folder \"%s\": %v", index, dst, err)
+				return ""
+			}
+		}
+		if err := copyFolder(src, dst, true); err != nil {
+			PrintError("[%d] failed to save folder from \"%s\" to \"%s\": %v", index, src, dst, err)
+			return ""
+		}
+	} else {
+		if err := copyFile(src, dst); err != nil {
+			PrintError("[%d] failed to save file from \"%s\" to \"%s\": %v", index, src, dst, err)
+			return ""
+		}
+	}
+
+	p, err := absolutePath(e.storage)
+	if err != nil {
+		PrintError("[%d] failed resolve absolute path from configuration storage: %v", index, err)
+		return ""
+	}
+
+	return strings.ReplaceAll(dst, p+"/", "")
+}
+
+func (e *Items) loadItem(src, dst string, index int) {
+	if err := os.MkdirAll(path.Dir(dst), 0755); err != nil {
+		PrintError("[%d] failed to create directory architecture for destination path \"%s\": %v", index, path.Dir(dst), err)
+		return
+	}
+
+	s, err := os.Stat(src)
+	if err != nil {
+		PrintError("[%d] failed to check if source path is a folder \"%s\": %v", index, src, err)
+		return
+	}
+
+	if s.IsDir() {
+		dstPerms := fs.FileMode(0755)
+		s, err := os.Stat(dst)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				PrintError("[%d] failed to check if destination folder \"%s\" exists: %v", index, dst, err)
+				return
+			}
+		} else {
+			dstPerms = s.Mode()
+		}
+
+		if err := os.Mkdir(dst, dstPerms); err != nil {
+			if !os.IsExist(err) {
+				PrintError("[%d] failed to create destination folder \"%s\": %v", index, dst, err)
+				return
+			}
+		}
+		if err := copyFolder(src, dst, false); err != nil {
+			PrintError("[%d] failed to load folder from \"%s\" to \"%s\": %v", index, src, dst, err)
+			return
+		}
+	} else {
+		if err := copyFile(src, dst); err != nil {
+			PrintError("[%d] failed to load file from \"%s\" to \"%s\": %v", index, src, dst, err)
+			return
+		}
+	}
+}
+
+func (e *Items) AddItems(items []OSLocation) {
 	e.locations = append(e.locations, items...)
 }
 
