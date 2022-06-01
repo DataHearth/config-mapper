@@ -56,7 +56,7 @@ config-mapper save
 
 All defined files and folders will be copied inside your repository.
 
-If you want to exclude one part of your configuration file (files, folders, package-managers), you can use these flags to ignore them `--disable-files` `--disable-folders` `--disable-pkgs`.
+If you want to exclude one part of your configuration file (files, folders), you can use these flags to ignore them `--disable-files` `--disable-folders`. Note, package managers are disable by default. You can enable this option using the `--pkgs` flag. 
 
 You can also exclude files and folders from a given directory with a `.gitignore` like file named `.ignore`. Put it in the root directory of an included folder and add relative path to exclude (does not support glob for now). E.g:
 
