@@ -22,7 +22,7 @@ var rootCmd = &cobra.Command{
 	Short: "Manage your systems configuration",
 	Long: `config-mapper aims to help you manage your configurations between systems
 		with a single configuration file.`,
-	Version: "v0.1.0.beta0",
+	Version: "v0.3.0",
 }
 var initCmd = &cobra.Command{
 	Use:   "init",
