@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 
+<a name="v0.3.0"></a>
+## [v0.3.0] - 2022-06-01
+### Features
+- **cli:** packages are disabled by default
+- **sync:** add .ignore file to filter folder's content
+
+
 <a name="v0.2.0"></a>
 ## [v0.2.0] - 2022-05-23
 ### Bug Fixes
@@ -53,5 +60,6 @@
 - **config:** add yaml tags for yaml.v3
 
 
-[Unreleased]: https://github.com/DataHearth/config-mapper/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/DataHearth/config-mapper/compare/v0.3.0...HEAD
+[v0.3.0]: https://github.com/DataHearth/config-mapper/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/DataHearth/config-mapper/compare/v0.1.0...v0.2.0
