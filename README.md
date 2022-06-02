@@ -56,7 +56,7 @@ config-mapper save
 
 All defined files and folders will be copied inside your repository.
 
-If you want to exclude one part of your configuration file (files, folders), you can use these flags to ignore them `--disable-files` `--disable-folders`. Note, package managers are disable by default. You can enable this option using the `--pkgs` flag. 
+If you want to exclude one part of your configuration file (files, folders), you can use these flags to ignore them `--disable-files` `--disable-folders`. Note, package managers are disable by default. You can enable this option using the `--pkgs` flag.
 
 You can also exclude files and folders from a given directory with a `.gitignore` like file named `.ignore`. Put it in the root directory of an included folder and add relative path to exclude (does not support glob for now). E.g:
 
@@ -73,6 +73,7 @@ drwxr-xr-x     - antoine  1 Jun 20:27  └── foo
 ```
 
 `.ignore` content:
+
 ```
 # bar file will be ignored
 foo/bar
@@ -130,7 +131,7 @@ The same ignore flags are used in the `save` command.
 
 ## TO-DO
 
-- [X] add `.ignore` file to ignore content inside directory
+- [x] add `.ignore` file to ignore content inside directory
 - [ ] optimisation over speed and memory
 - [ ] load configuration though SSH
 - [ ] save configuration though SSH
@@ -145,3 +146,6 @@ The same ignore flags are used in the `save` command.
   Resolved by create a new primary key based on GitHub new GIT SSH standards ([issue](https://github.com/go-git/go-git/issues/411))
 - Cloning from GitHub with `https BasicAuth` and 2FA activated: `authentication required`
   Resolved by creating an access token and set it as password in configuration
+- WSL might have a rough time with opened files by `homebrew` and throwing `Error: too many open files`.  
+  [This thread](https://github.com/Homebrew/linuxbrew-core/issues/21139) discuss about this issue.
+  The workaround seems to be settings the filesystem limit (`ulimit -Hn && ulimit -Sn`) to the maximum value (which was 4096 on my machine).
