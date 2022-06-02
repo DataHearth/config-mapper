@@ -132,9 +132,8 @@ The same ignore flags are used in the `save` command.
 ## TO-DO
 
 - [x] add `.ignore` file to ignore content inside directory
+- [x] use remote configuration: SSH
 - [ ] optimisation over speed and memory
-- [ ] load configuration though SSH
-- [ ] save configuration though SSH
 - add more storage options
   - [ ] smb storage
   - [ ] nfs storage
