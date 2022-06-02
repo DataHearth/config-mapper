@@ -1,19 +1,18 @@
-package mapper
+package misc
 
 import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
 	"strings"
 
-	"github.com/fatih/color"
+	"github.com/datahearth/config-mapper/internal/configuration"
 )
 
-func absolutePath(p string) (string, error) {
+func AbsolutePath(p string) (string, error) {
 	finalPath := p
 	if strings.Contains(finalPath, "~") {
 		h, err := os.UserHomeDir()
@@ -31,7 +30,8 @@ func absolutePath(p string) (string, error) {
 		if strings.Contains(s, "$") {
 			env := os.Getenv(s)
 			if env == "" {
-				return "", ErrInvalidEnv
+				return "", errors.New("found invalid environment variable in path")
+
 			}
 			pathPart = env
 		}
@@ -49,12 +49,12 @@ func getPaths(p string, l string) (string, string, error) {
 		return "", "", errors.New("path incorrectly formatted. It requires \"source:destination\"")
 	}
 
-	src, err := absolutePath(strings.Replace(paths[0], "$LOCATION", l, 1))
+	src, err := AbsolutePath(strings.Replace(paths[0], "$LOCATION", l, 1))
 	if err != nil {
 		return "", "", err
 	}
 
-	dst, err := absolutePath(paths[1])
+	dst, err := AbsolutePath(paths[1])
 	if err != nil {
 		return "", "", err
 	}
@@ -62,7 +62,7 @@ func getPaths(p string, l string) (string, string, error) {
 	return src, dst, nil
 }
 
-func copyFile(src, dst string) error {
+func CopyFile(src, dst string) error {
 	s, err := os.Stat(src)
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func copyFile(src, dst string) error {
 	return nil
 }
 
-func configPaths(os OSLocation, location string) (string, string, error) {
+func ConfigPaths(os configuration.OSLocation, location string) (string, string, error) {
 	var src, dst string
 	var err error
 
@@ -115,14 +115,14 @@ func configPaths(os OSLocation, location string) (string, string, error) {
 
 var ignored map[string]bool
 
-func copyFolder(src, dst string, checkIgnore bool) error {
+func CopyFolder(src, dst string, checkIgnore bool) error {
 	items, err := os.ReadDir(src)
 	if err != nil {
 		return err
 	}
 
 	if checkIgnore {
-		f, err := ioutil.ReadFile(fmt.Sprintf("%s/.ignore", src))
+		f, err := os.ReadFile(fmt.Sprintf("%s/.ignore", src))
 		if err != nil && !errors.Is(err, io.EOF) {
 			if !errors.Is(err, os.ErrNotExist) {
 				return err
@@ -158,21 +158,17 @@ func copyFolder(src, dst string, checkIgnore bool) error {
 			if err := os.MkdirAll(dstItem, info.Mode()); err != nil {
 				return err
 			}
-			if err := copyFolder(srcItem, dstItem, false); err != nil {
+			if err := CopyFolder(srcItem, dstItem, false); err != nil {
 				return err
 			}
 
 			continue
 		}
 
-		if err := copyFile(srcItem, dstItem); err != nil {
+		if err := CopyFile(srcItem, dstItem); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func PrintError(err string, values ...interface{}) {
-	color.Error.Write([]byte(color.RedString(err+"\n", values...)))
 }

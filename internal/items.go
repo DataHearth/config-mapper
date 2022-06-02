@@ -7,26 +7,29 @@ import (
 	"path"
 	"strings"
 
+	"github.com/datahearth/config-mapper/internal/configuration"
+	"github.com/datahearth/config-mapper/internal/git"
+	"github.com/datahearth/config-mapper/internal/misc"
 	"github.com/fatih/color"
 	"github.com/spf13/viper"
 )
 
 type Items struct {
-	locations  []OSLocation
+	locations  []configuration.OSLocation
 	storage    string
-	repository RepositoryActions
+	repository git.RepositoryActions
 	indexer    Indexer
 }
 
 type ItemsActions interface {
 	Action(action string)
-	AddItems(items []OSLocation)
+	AddItems(items []configuration.OSLocation)
 	CleanUp(removedLines []string) error
 }
 
-func NewItemsActions(items []OSLocation, storage string, repository RepositoryActions, indexer Indexer) ItemsActions {
+func NewItemsActions(items []configuration.OSLocation, storage string, repository git.RepositoryActions, indexer Indexer) ItemsActions {
 	if items == nil {
-		items = []OSLocation{}
+		items = []configuration.OSLocation{}
 	}
 
 	return &Items{
@@ -43,7 +46,7 @@ func (e *Items) Action(action string) {
 
 	for i, l := range e.locations {
 		var src string
-		storagePath, systemPath, err := configPaths(l, e.storage)
+		storagePath, systemPath, err := misc.ConfigPaths(l, e.storage)
 		if err != nil {
 			PrintError("[%d] failed to resolve item paths \"%v\": %v", i, l, err)
 			continue
@@ -103,18 +106,18 @@ func (e *Items) saveItem(src, dst string, index int) string {
 				return ""
 			}
 		}
-		if err := copyFolder(src, dst, true); err != nil {
+		if err := misc.CopyFolder(src, dst, true); err != nil {
 			PrintError("[%d] failed to save folder from \"%s\" to \"%s\": %v", index, src, dst, err)
 			return ""
 		}
 	} else {
-		if err := copyFile(src, dst); err != nil {
+		if err := misc.CopyFile(src, dst); err != nil {
 			PrintError("[%d] failed to save file from \"%s\" to \"%s\": %v", index, src, dst, err)
 			return ""
 		}
 	}
 
-	p, err := absolutePath(e.storage)
+	p, err := misc.AbsolutePath(e.storage)
 	if err != nil {
 		PrintError("[%d] failed resolve absolute path from configuration storage: %v", index, err)
 		return ""
@@ -153,25 +156,25 @@ func (e *Items) loadItem(src, dst string, index int) {
 				return
 			}
 		}
-		if err := copyFolder(src, dst, false); err != nil {
+		if err := misc.CopyFolder(src, dst, false); err != nil {
 			PrintError("[%d] failed to load folder from \"%s\" to \"%s\": %v", index, src, dst, err)
 			return
 		}
 	} else {
-		if err := copyFile(src, dst); err != nil {
+		if err := misc.CopyFile(src, dst); err != nil {
 			PrintError("[%d] failed to load file from \"%s\" to \"%s\": %v", index, src, dst, err)
 			return
 		}
 	}
 }
 
-func (e *Items) AddItems(items []OSLocation) {
+func (e *Items) AddItems(items []configuration.OSLocation) {
 	e.locations = append(e.locations, items...)
 }
 
 func (e *Items) CleanUp(removedLines []string) error {
 	for _, l := range removedLines {
-		path, err := absolutePath(fmt.Sprintf("%s/%s", e.storage, l))
+		path, err := misc.AbsolutePath(fmt.Sprintf("%s/%s", e.storage, l))
 		if err != nil {
 			return err
 		}
@@ -182,4 +185,8 @@ func (e *Items) CleanUp(removedLines []string) error {
 	}
 
 	return nil
+}
+
+func PrintError(err string, values ...interface{}) {
+	color.Error.Write([]byte(color.RedString(err+"\n", values...)))
 }
