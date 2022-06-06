@@ -147,4 +147,5 @@ The same ignore flags are used in the `save` command.
   Resolved by creating an access token and set it as password in configuration
 - WSL might have a rough time with opened files by `homebrew` and throwing `Error: too many open files`.  
   [This thread](https://github.com/Homebrew/linuxbrew-core/issues/21139) discuss about this issue.
-  The workaround seems to be settings the filesystem limit (`ulimit -Hn && ulimit -Sn`) to the maximum value (which was 4096 on my machine).
+  The workaround seems to be increase the filesystem limit (`ulimit -Hn && ulimit -Sn`). Another way is to launch again your command as homebrew already installed
+  some the packages.
