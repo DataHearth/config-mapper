@@ -88,6 +88,10 @@ func getSSHConfig(uriFlag string) (*ssh.ClientConfig, string, string, error) {
 
 		var currentUser *osUser.User
 		currentUser, err = osUser.Current()
+		if err != nil {
+			return nil, "", "", err
+		}
+
 		user = currentUser.Username
 	}
 

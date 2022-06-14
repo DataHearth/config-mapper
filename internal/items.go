@@ -51,6 +51,10 @@ func (e *Items) Action(action string) {
 			PrintError("[%d] failed to resolve item paths \"%v\": %v", i, l, err)
 			continue
 		}
+		if storagePath == "" && systemPath == "" {
+			color.Blue("[%d] file doesn't have configuration path for current OS. Skipping...")
+			continue
+		}
 
 		if action == "save" {
 			src = systemPath
