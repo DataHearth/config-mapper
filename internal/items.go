@@ -116,6 +116,11 @@ func (e *Items) saveItem(src, dst string, index int) string {
 			dstPerms = s.Mode()
 		}
 
+		// remove the destination if it exists. It cleans up the saved location from unused files
+		if err := os.RemoveAll(dst); err != nil {
+			PrintError("[%d] failed to truncate destination folder \"%s\": %v", index, dst, err)
+		}
+
 		if err := os.Mkdir(dst, dstPerms); err != nil {
 			if !os.IsExist(err) {
 				PrintError("[%d] failed to create destination folder \"%s\": %v", index, dst, err)
