@@ -22,6 +22,7 @@ var (
 	ErrAptNotAvailable    = errors.New("aptitude is not available on your system")
 )
 
+// LoadPkgs triggers related functions with passed order
 func LoadPkgs(c configuration.PkgManagers) error {
 	color.Blue("\n# Installing packages")
 
@@ -43,13 +44,14 @@ func LoadPkgs(c configuration.PkgManagers) error {
 	return nil
 }
 
+// SavePkgs triggers related functions with passed order
 func SavePkgs(cfg configuration.Configuration) error {
 	color.Blue("# Saving user installed packages")
 
 	for _, pkg := range cfg.PackageManagers.InstallationOrder {
 		switch pkg {
 		case "homebrew":
-			if err := SaveBrewPkgs(cfg); err != nil {
+			if err := saveBrewPkgs(cfg); err != nil {
 				PrintError(err.Error())
 				return ErrFailedSaving
 			}
@@ -61,7 +63,9 @@ func SavePkgs(cfg configuration.Configuration) error {
 	return nil
 }
 
-func SaveBrewPkgs(cfg configuration.Configuration) error {
+// saveBrewPkgs gather user installed packages by running `brew leaves --installed-on-request`.
+// It captures the output, parse it and save it into the configuration.
+func saveBrewPkgs(cfg configuration.Configuration) error {
 	if _, err := exec.LookPath("brew"); err != nil {
 		return err
 	}
@@ -89,6 +93,8 @@ func SaveBrewPkgs(cfg configuration.Configuration) error {
 	return nil
 }
 
+// installBrewPkgs installs homebrew packages by passing them to homebrew's CLI.
+// STDERR and STDOUT are captured if verbose flag is passed.
 func installBrewPkgs(pkgs []string) error {
 	if _, err := exec.LookPath("brew"); err != nil {
 		return ErrBrewNotAvailable
@@ -128,23 +134,24 @@ func installBrewPkgs(pkgs []string) error {
 	return nil
 }
 
+// installAptPkgs installs all provided "apt" packages by passing them to the Advanced Package Tool's CLI
 func installAptPkgs(pkgs []string) error {
-	if _, err := exec.LookPath("apt-get"); err != nil {
+	if _, err := exec.LookPath("apt"); err != nil {
 		return ErrAptNotAvailable
 	}
 
 	if len(pkgs) == 0 {
-		fmt.Println("aptitude: nothing to do")
+		fmt.Println("apt: nothing to do")
 		return nil
 	}
 
-	cmd := exec.Command("sudo", "apt-get", "install")
+	cmd := exec.Command("sudo", "apt", "install")
 	cmd.Args = append(cmd.Args, pkgs...)
 
-	color.Blue("\n## Installing aptitude packages")
+	color.Blue("\n## Installing apt packages")
 
 	if err := cmd.Run(); err != nil {
-		PrintError("aptitude command failed: %v", err)
+		PrintError("apt command failed: %v", err)
 		return err
 	}
 

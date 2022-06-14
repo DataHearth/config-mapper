@@ -40,6 +40,11 @@ func NewItemsActions(items []configuration.OSLocation, storage string, repositor
 	}
 }
 
+// Action performs a "save" or "load" action on all given items.
+//
+// Any error is printed to STDERR and item is skipped.
+//
+// If the performed action is "save", it'll also write the `.index` file with all new items.
 func (e *Items) Action(action string) {
 	color.Blue("# %s files and folders\n", action)
 	newLines := []string{}
@@ -80,6 +85,13 @@ func (e *Items) Action(action string) {
 	}
 }
 
+// saveItem saves a given item inside the configured saved location.
+//
+// If an error is given during the process, the function returns an empty string
+// (meaning the item hasn't been saved) and prints the error in STDERR.
+//
+// Else, returns the relative item location from the saved location to write the index
+// (E.g: /home/user/.config => .config)
 func (e *Items) saveItem(src, dst string, index int) string {
 	if err := os.MkdirAll(path.Dir(dst), 0755); err != nil {
 		PrintError("[%d] failed to create directory architecture for destination path \"%s\": %v", index, path.Dir(dst), err)
@@ -130,6 +142,10 @@ func (e *Items) saveItem(src, dst string, index int) string {
 	return strings.ReplaceAll(dst, p+"/", "")
 }
 
+// loadItem loads a given item onto the system.
+//
+// If an error is given during the process, the function returns an empty string
+// (meaning the item hasn't been saved) and prints the error in STDERR.
 func (e *Items) loadItem(src, dst string, index int) {
 	if err := os.MkdirAll(path.Dir(dst), 0755); err != nil {
 		PrintError("[%d] failed to create directory architecture for destination path \"%s\": %v", index, path.Dir(dst), err)
