@@ -72,4 +72,4 @@ log "INFO" "building Darwin binary"
 GOOS=darwin go build -o build/x86-x64_darwin_config-mapper
 
 log "INFO" "creating release"
-git-chglog -t .chglog/RELEASE_CHANGELOG.tpl.md | gh release create -F - v0.4.0 build/x86-x64_*
+git-chglog -t .chglog/RELEASE_CHANGELOG.tpl.md | gh release create -F - $release build/x86-x64_*
