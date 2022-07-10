@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=v0.4.0
+VERSION=v0.5.0
 
 log() {
     NTR=$'\033[0m'    # * Neutral

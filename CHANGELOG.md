@@ -3,6 +3,15 @@
 ## [Unreleased]
 
 
+<a name="v0.5.0"></a>
+## [v0.5.0] - 2022-07-10
+### Bug Fixes
+- **git:** use go-git for adding removed file (workaround)
+
+### Features
+- **pkgs:** add more package manager
+
+
 <a name="v0.4.0"></a>
 ## [v0.4.0] - 2022-06-16
 ### Bug Fixes
@@ -71,7 +80,8 @@
 - **config:** add yaml tags for yaml.v3
 
 
-[Unreleased]: https://github.com/DataHearth/config-mapper/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/DataHearth/config-mapper/compare/v0.5.0...HEAD
+[v0.5.0]: https://github.com/DataHearth/config-mapper/compare/v0.4.0...v0.5.0
 [v0.4.0]: https://github.com/DataHearth/config-mapper/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/DataHearth/config-mapper/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/DataHearth/config-mapper/compare/v0.1.0...v0.2.0
