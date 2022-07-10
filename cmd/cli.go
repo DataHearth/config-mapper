@@ -54,6 +54,7 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(loadCmd)
 	rootCmd.AddCommand(saveCmd)
+
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "STDOUT will be more verbose")
 	rootCmd.PersistentFlags().StringP("configuration-file", "c", "", "location of configuration file")
 	rootCmd.PersistentFlags().String("ssh-user", "", "SSH username to retrieve configuration file")
@@ -74,13 +75,11 @@ func init() {
 
 	saveCmd.Flags().Bool("disable-files", false, "files will be ignored")
 	saveCmd.Flags().Bool("disable-folders", false, "folders will be ignored")
-	saveCmd.Flags().Bool("pkgs", false, "packages will be saved")
 	saveCmd.Flags().BoolP("push", "p", false, "new configurations will be committed and pushed")
 	saveCmd.Flags().StringP("message", "m", strconv.FormatInt(time.Now().Unix(), 10), "combined with --push to set a commit message")
 	saveCmd.Flags().Bool("disable-index", false, "configuration index will not be updated")
 	viper.BindPFlag("save-disable-files", saveCmd.Flags().Lookup("disable-files"))
 	viper.BindPFlag("save-disable-folders", saveCmd.Flags().Lookup("disable-folders"))
-	viper.BindPFlag("save-enable-pkgs", saveCmd.Flags().Lookup("pkgs"))
 	viper.BindPFlag("push", saveCmd.Flags().Lookup("push"))
 	viper.BindPFlag("disable-index-update", saveCmd.Flags().Lookup("disable-index"))
 	viper.BindPFlag("message", saveCmd.Flags().Lookup("message"))
@@ -122,13 +121,6 @@ func save(cmd *cobra.Command, args []string) {
 	}
 
 	el.Action("save")
-
-	if viper.GetBool("save-enable-pkgs") {
-		if err := mapper.SavePkgs(c); err != nil {
-			mapper.PrintError(err.Error())
-			os.Exit(1)
-		}
-	}
 
 	if err := el.CleanUp(indexer.RemovedLines()); err != nil {
 		mapper.PrintError("failed to clean repository: %v\n", err)
@@ -178,7 +170,7 @@ func load(cmd *cobra.Command, args []string) {
 	el.Action("load")
 
 	if viper.GetBool("load-enable-pkgs") {
-		if err := mapper.LoadPkgs(c.PackageManagers); err != nil {
+		if err := mapper.InstallPackages(c.PackageManagers); err != nil {
 			mapper.PrintError(err.Error())
 			os.Exit(1)
 		}

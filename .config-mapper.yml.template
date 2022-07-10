@@ -10,7 +10,7 @@ storage:
     basic-auth:
       username: USERNAME
       # * NOTE: if you're having trouble with error "authentication required", you should maybe use a token access
-      # * In some cases, it's due to 2FA authentication enabled on the git hosting provided
+      # * In some cases, it's due to 2FA authentication enabled on the git hosting provider
       password: TOKEN
     # * by default, if ssh dict is set with its keys filled, I'll try to clone with SSH
     ssh:
@@ -19,7 +19,7 @@ storage:
       passphrase: PASSPHRASE
 
 # NOTE: the $LOCATION if refering to the "storage.location" path. It'll be replaced automatically
-# The left part of ":" is your repository location and right part when it should be on your system
+# The left part of ":" is your repository location and right part where it should be located on your system
 files:
   - darwin: "$LOCATION/macos/.zshrc:~/.zshrc"
     linux: "$LOCATION/linux/.zshrc:~/.zshrc"
@@ -29,7 +29,7 @@ folders:
     linux: "$LOCATION/macos/.config:~/.config"
 
 package-managers:
-  installation-order: ["homebrew"]
+  installation-order: ["homebrew"] # available: brew, pip (pip check also for pip3), cargo, apt, npm, go
   homebrew:
     - bat
     - hexyl
@@ -46,5 +46,3 @@ package-managers:
     - nmap
     - pinentry
     - zsh
-
-  apt-get: []
