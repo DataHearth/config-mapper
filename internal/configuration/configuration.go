@@ -51,7 +51,6 @@ func InitConfig() {
 	viper.SetConfigName(".config-mapper")
 
 	viper.SetDefault("storage.location", fmt.Sprintf("%s/config-mapper", os.TempDir()))
-	viper.SetDefault("package-managers.installation-order", []string{"apt", "homebrew"})
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
