@@ -57,7 +57,7 @@ func (e *Items) Action(action string) {
 			continue
 		}
 		if storagePath == "" && systemPath == "" {
-			color.Blue("[%d] file doesn't have configuration path for current OS. Skipping...")
+			color.Blue("[%d] file doesn't have configuration path for current OS. Skipping...", i)
 			continue
 		}
 
