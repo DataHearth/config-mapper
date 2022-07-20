@@ -69,9 +69,11 @@ func init() {
 	loadCmd.Flags().Bool("disable-files", false, "files will be ignored")
 	loadCmd.Flags().Bool("disable-folders", false, "folders will be ignored")
 	loadCmd.Flags().Bool("pkgs", false, "packages will be installed")
+	loadCmd.Flags().StringSlice("exclude-pkg-managers", []string{}, "package managers to exclude (comma separated)")
 	viper.BindPFlag("load-disable-files", loadCmd.Flags().Lookup("disable-files"))
 	viper.BindPFlag("load-disable-folders", loadCmd.Flags().Lookup("disable-folders"))
 	viper.BindPFlag("load-enable-pkgs", loadCmd.Flags().Lookup("pkgs"))
+	viper.BindPFlag("exclude-pkg-managers", loadCmd.Flags().Lookup("exclude-pkg-managers"))
 
 	saveCmd.Flags().Bool("disable-files", false, "files will be ignored")
 	saveCmd.Flags().Bool("disable-folders", false, "folders will be ignored")

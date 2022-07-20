@@ -43,4 +43,5 @@ type PkgManagers struct {
 	Pip               []string `mapstructure:"pip" yaml:"pip"`
 	Npm               []string `mapstructure:"npm" yaml:"npm"`
 	Go                []string `mapstructure:"go" yaml:"go"`
+	Nala              []string `mapstructure:"nala" yaml:"nala"`
 }
