@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
+	"strings"
 
 	"github.com/datahearth/config-mapper/internal/configuration"
 	"github.com/fatih/color"
@@ -17,6 +19,8 @@ func InstallPackages(c configuration.PkgManagers) error {
 	color.Blue("\n# Installing packages")
 
 	for _, pkgManager := range c.InstallationOrder {
+		color.Blue("## Installing %s packages", pkgManager)
+
 		var pkgs []string
 		switch pkgManager {
 		case "brew":
@@ -32,29 +36,42 @@ func InstallPackages(c configuration.PkgManagers) error {
 		case "go":
 			pkgs = c.Go
 		default:
-			PrintError("package manager not supported: %s", pkgManager)
+			PrintError("package manager not supported: %s\n", pkgManager)
 			continue
 		}
 
 		if _, err := exec.LookPath(pkgManager); err != nil {
+			// * pip might not be available on the system but pip3 is
 			if pkgManager == "pip" {
 				if _, err := exec.LookPath("pip3"); err != nil {
-					return fmt.Errorf("%s and pip3 are not available on your system", pkgManager)
+					PrintError("%s and pip3 are not available on your system\n", pkgManager)
+					continue
 				}
 				pkgManager = "pip3"
 			} else {
-				return fmt.Errorf("%s is not available on your system", pkgManager)
+				PrintError("%s is not available on your system\n", pkgManager)
+				continue
 			}
+		}
+		// * for some reason, apt binary is available on darwin. Exclude it to avoid errors
+		if pkgManager == "apt" && runtime.GOOS == "darwin" {
+			PrintError("%s is not available on your system\n", pkgManager)
+			continue
 		}
 
 		if len(pkgs) == 0 {
 			fmt.Printf("%s: nothing to do\n", pkgManager)
-			return nil
+			continue
 		}
 
 		cmd := exec.Command(pkgManager, "install")
-		cmd.Args = append(cmd.Args, pkgs...)
-		color.Blue("\n## Installing %s packages", pkgManager)
+		for _, pkg := range pkgs {
+			if strings.Contains(pkg, " ") {
+				cmd.Args = append(cmd.Args, strings.Split(pkg, " ")...)
+			} else {
+				cmd.Args = append(cmd.Args, pkg)
+			}
+		}
 
 		spinner := wow.New(os.Stdout, spin.Get(spin.Dots3), " Running...")
 
@@ -75,8 +92,10 @@ func InstallPackages(c configuration.PkgManagers) error {
 		if v {
 			// todo: find a way to clear spinner when done
 			spinner.Stop()
+			fmt.Println()
 		}
-		color.Green("\n%s Packages intalled succesfully !", pkgManager)
+		color.Green("%s packages intalled succesfully !", pkgManager)
+		fmt.Println()
 	}
 
 	return nil
