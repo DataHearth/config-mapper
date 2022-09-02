@@ -22,7 +22,7 @@ type Git struct {
 	Name      string    `mapstructure:"name" yaml:"name"`
 	Email     string    `mapstructure:"email" yaml:"email"`
 	BasicAuth BasicAuth `mapstructure:"basic-auth" yaml:"basic-auth"`
-	SSH       Ssh       `mapstructure:"ssh" yaml:"ssh"`
+	SSH       interface{}       `mapstructure:"ssh" yaml:"ssh"`
 }
 
 type BasicAuth struct {

@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	mapper "github.com/datahearth/config-mapper/internal"
-	"github.com/datahearth/config-mapper/internal/configuration"
-	"github.com/datahearth/config-mapper/internal/git"
+	mapper "gitea.antoine-langlois.net/datahearth/config-mapper/internal"
+	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/configuration"
+	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/git"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

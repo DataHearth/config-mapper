@@ -1,6 +1,6 @@
 package main
 
-import "github.com/datahearth/config-mapper/cmd"
+import "gitea.antoine-langlois.net/datahearth/config-mapper/cmd"
 
 func main() {
 	cmd.Execute()

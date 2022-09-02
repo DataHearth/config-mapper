@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/datahearth/config-mapper/internal/configuration"
+	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/configuration"
 )
 
 func AbsolutePath(p string) (string, error) {

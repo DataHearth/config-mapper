@@ -113,8 +113,8 @@ if __name__ == "__main__":
     api_token: str
     if len(sys.argv) > 1:
         api_token = sys.argv.pop()
-    elif os.getenv("GIT_CFG_MAPPER_TOKEN"):
-        api_token = os.getenv("GIT_CFG_MAPPER_TOKEN")
+    elif "GIT_CFG_MAPPER_TOKEN" in os.environ:
+        api_token = os.environ["GIT_CFG_MAPPER_TOKEN"]
     else:
         log("no gitea api token found in CLI params nor in ENV", LogLevel.ERROR)
         sys.exit(1)

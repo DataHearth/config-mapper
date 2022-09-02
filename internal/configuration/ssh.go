@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	osUser "os/user"
 	"strings"
@@ -156,7 +155,7 @@ func getUriContent(uri string) (string, string, error) {
 
 func createPubKeyAuth(key string) (ssh.AuthMethod, error) {
 	var signer ssh.Signer
-	privateKey, err := ioutil.ReadFile(key)
+	privateKey, err := os.ReadFile(key)
 	if err != nil {
 		return nil, err
 	}

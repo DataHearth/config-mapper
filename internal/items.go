@@ -7,9 +7,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/datahearth/config-mapper/internal/configuration"
-	"github.com/datahearth/config-mapper/internal/git"
-	"github.com/datahearth/config-mapper/internal/misc"
+	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/configuration"
+	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/git"
+	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/misc"
 	"github.com/fatih/color"
 	"github.com/spf13/viper"
 )
@@ -57,7 +57,7 @@ func (e *Items) Action(action string) {
 			continue
 		}
 		if storagePath == "" && systemPath == "" {
-			fmt.Printf("⛔ Skipping %s\n", src)
+			fmt.Println("⛔ Skipping")
 			continue
 		}
 
