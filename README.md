@@ -11,30 +11,26 @@ When copying a file from your configuration repository to your system, it's perf
 
 The system is detected automatically. You just need to specify whether the related field in case of `files` or folders `sections` (fields: `darwin` | `linux`).
 
-You can get a configuration template [here](https://raw.githubusercontent.com/DataHearth/config-mapper/main/.config-mapper.yml.template).
+You can get a configuration template [here](https://gitea.antoine-langlois.net/DataHearth/config-mapper/raw/branch/main/.config-mapper.yml.template).
 
 ### Installation
 
-Using a pre-build binary:
+- Using a pre-build binary
 
-- `wget`
+Binaries are available in the `release` section at [https://gitea.antoine-langlois.net/DataHearth/config-mapper/releases](https://gitea.antoine-langlois.net/DataHearth/config-mapper/releases).
 
-```bash
-wget https://github.com/DataHearth/config-mapper/releases/download/{RELEASE}/x86-x64_{linux|darwin}_config-mapper -O $HOME/.local/bin/
-```
-
-- `gh`
+- Building from source:
 
 ```bash
-gh release download -r DataHearth/config-mapper {RELEASE} -d $HOME/.local/bin/ -p "x86-x64_{linux|darwin}_config-mapper"
-```
-
-Building from source:
-
-```bash
-git clone git@github.com:datahearth/config-mapper.git
+git clone https://gitea.antoine-langlois.net/DataHearth/config-mapper.git
 cd config-mapper
 go build -o $HOME/.local/bin/config-mapper
+```
+
+- With Golang cli
+
+```bash
+go install gitea.antoine-langlois.net/datahearth/config-mapper@latest
 ```
 
 ### Setup
