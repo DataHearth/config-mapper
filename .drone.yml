@@ -19,8 +19,8 @@ steps:
   - name: release
     image: goreleaser/goreleaser
     environment:
-      GITHUB_TOKEN:
-        from_secret: github_token
+      GITEA_TOKEN:
+        from_secret: GITEA_TOKEN
     commands:
       - go install github.com/git-chglog/git-chglog/cmd/git-chglog@latest
       - goreleaser release --clean --release-notes <(git-chglog -t .chglog/RELEASE_CHANGELOG.tpl.md)
