@@ -8,7 +8,7 @@ import (
 	osUser "os/user"
 	"strings"
 
-	"github.com/fatih/color"
+	"github.com/charmbracelet/log"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
@@ -83,7 +83,7 @@ func getSSHConfig(uriFlag string) (*ssh.ClientConfig, string, string, error) {
 	}
 
 	if user == "" {
-		color.Yellow("WARNING: no user was found in either the URI and flags. Current user will be used")
+		log.Warn("no user was found in either the URI and flags. Current user will be used")
 
 		var currentUser *osUser.User
 		currentUser, err = osUser.Current()

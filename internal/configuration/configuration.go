@@ -2,21 +2,18 @@ package configuration
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"strings"
 
-	"github.com/fatih/color"
+	"github.com/charmbracelet/log"
 	"github.com/spf13/viper"
 )
-
-var errLogger = log.New(os.Stderr, "", 0)
 
 func InitConfig() {
 	h, err := os.UserHomeDir()
 	if err != nil {
-		errLogger.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	if c := viper.GetString("configuration-file"); c != "" {
@@ -27,7 +24,7 @@ func InitConfig() {
 			viper.SetConfigName(".config-mapper")
 
 			if err := loadConfigSSH(c); err != nil {
-				errLogger.Fatalln(err)
+				log.Fatal(err)
 			}
 			return
 		}
@@ -53,13 +50,14 @@ func InitConfig() {
 	viper.SetDefault("storage.location", fmt.Sprintf("%s/config-mapper", os.TempDir()))
 
 	if err := viper.ReadInConfig(); err != nil {
+		var errMsg string
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			color.Error.Write([]byte(color.RedString("no configuration file found: %v\n", err)))
+			errMsg = "no configuration file found"
 		} else {
-			color.Error.Write([]byte(color.RedString("failed to read config: %v\n", err)))
+			errMsg = "failed to read config"
 		}
 
-		os.Exit(1)
+		log.Fatal(errMsg, "err", err)
 	}
 
 	viper.Set("configuration-file", viper.ConfigFileUsed())

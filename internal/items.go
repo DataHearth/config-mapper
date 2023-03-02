@@ -10,7 +10,7 @@ import (
 	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/configuration"
 	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/git"
 	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/misc"
-	"github.com/fatih/color"
+	"github.com/charmbracelet/log"
 	"github.com/spf13/viper"
 )
 
@@ -46,41 +46,36 @@ func NewItemsActions(items []configuration.OSLocation, storage string, repositor
 //
 // If the performed action is "save", it'll also write the `.index` file with all new items.
 func (e *Items) Action(action string) {
-	fmt.Printf("# %s files and folders\n", action)
+	log.Info("performing action", "action", action)
 	newLines := []string{}
 
 	for i, l := range e.locations {
-		var src string
 		storagePath, systemPath, err := misc.ConfigPaths(l, e.storage)
 		if err != nil {
-			PrintError("❌ failed to resolve item paths \"%v\": %v", i, l, err)
+			log.Error("failed to resolve item paths", "item", i, "location", l, "err", err)
 			continue
 		}
 		if storagePath == "" && systemPath == "" {
-			fmt.Println("⛔ Skipping")
+			log.Info("item is empty", "item", i, "location", l)
 			continue
 		}
 
 		if action == "save" {
-			src = systemPath
-
 			if newItem := e.saveItem(systemPath, storagePath, i); newItem != "" {
 				newLines = append(newLines, newItem)
 			} else {
 				continue
 			}
 		} else {
-			src = storagePath
 			e.loadItem(storagePath, systemPath, i)
 		}
 
-		fmt.Printf("✔️ %s\n", src)
+		log.Info("item processed", "action", action, "item", i, "location", l)
 	}
 
 	if action == "save" && !viper.GetBool("disable-index-update") {
 		if err := e.indexer.Write(newLines); err != nil {
-			PrintError(err.Error())
-			os.Exit(1)
+			log.Fatal(err)
 		}
 	}
 }
@@ -94,13 +89,13 @@ func (e *Items) Action(action string) {
 // (E.g: /home/user/.config => .config)
 func (e *Items) saveItem(src, dst string, index int) string {
 	if err := os.MkdirAll(path.Dir(dst), 0755); err != nil {
-		PrintError("❌ failed to create directory architecture for destination path \"%s\": %v", index, path.Dir(dst), err)
+		log.Error("failed to create directory architecture for destination path", "path", path.Dir(dst), "err", err)
 		return ""
 	}
 
 	s, err := os.Stat(src)
 	if err != nil {
-		PrintError("❌ failed to check if source path is a folder \"%s\": %v", index, src, err)
+		log.Error("failed to check if source path is a folder", "path", src, "err", err)
 		return ""
 	}
 
@@ -109,7 +104,7 @@ func (e *Items) saveItem(src, dst string, index int) string {
 		s, err := os.Stat(dst)
 		if err != nil {
 			if !os.IsNotExist(err) {
-				PrintError("❌ failed to check if destination folder \"%s\" exists: %v", index, dst, err)
+				log.Error("failed to check if destination folder exists", "path", dst, "err", err)
 				return ""
 			}
 		} else {
@@ -118,29 +113,29 @@ func (e *Items) saveItem(src, dst string, index int) string {
 
 		// remove the destination if it exists. It cleans up the saved location from unused files
 		if err := os.RemoveAll(dst); err != nil {
-			PrintError("❌ failed to truncate destination folder \"%s\": %v", index, dst, err)
+			log.Error("failed to truncate destination folder", "path", dst, "err", err)
 		}
 
 		if err := os.Mkdir(dst, dstPerms); err != nil {
 			if !os.IsExist(err) {
-				PrintError("❌ failed to create destination folder \"%s\": %v", index, dst, err)
+				log.Error("failed to create destination folder", "path", dst, "err", err)
 				return ""
 			}
 		}
 		if err := misc.CopyFolder(src, dst, true); err != nil {
-			PrintError("❌ failed to save folder from \"%s\" to \"%s\": %v", index, src, dst, err)
+			log.Error("failed to save folder from source to destination", "source", src, "destination", dst, "err", err)
 			return ""
 		}
 	} else {
 		if err := misc.CopyFile(src, dst); err != nil {
-			PrintError("❌ failed to save file from \"%s\" to \"%s\": %v", index, src, dst, err)
+			log.Error("failed to save file from source to destination", "source", src, "destination", dst, "err", err)
 			return ""
 		}
 	}
 
 	p, err := misc.AbsolutePath(e.storage)
 	if err != nil {
-		PrintError("❌ failed resolve absolute path from configuration storage: %v", index, err)
+		log.Error("failed resolve absolute path from configuration storage", "err", err)
 		return ""
 	}
 
@@ -153,13 +148,13 @@ func (e *Items) saveItem(src, dst string, index int) string {
 // (meaning the item hasn't been saved) and prints the error in STDERR.
 func (e *Items) loadItem(src, dst string, index int) {
 	if err := os.MkdirAll(path.Dir(dst), 0755); err != nil {
-		PrintError("❌ failed to create directory architecture for destination path \"%s\": %v", index, path.Dir(dst), err)
+		log.Error("failed to create directory architecture for destination path", "path", path.Dir(dst), "err", err)
 		return
 	}
 
 	s, err := os.Stat(src)
 	if err != nil {
-		PrintError("❌ failed to check if source path is a folder \"%s\": %v", index, src, err)
+		log.Error("failed to check if source path is a folder", "path", src, "err", err)
 		return
 	}
 
@@ -168,7 +163,7 @@ func (e *Items) loadItem(src, dst string, index int) {
 		s, err := os.Stat(dst)
 		if err != nil {
 			if !os.IsNotExist(err) {
-				PrintError("❌ failed to check if destination folder \"%s\" exists: %v", index, dst, err)
+				log.Error("failed to check if destination folder exists", "path", dst, "err", err)
 				return
 			}
 		} else {
@@ -177,17 +172,17 @@ func (e *Items) loadItem(src, dst string, index int) {
 
 		if err := os.Mkdir(dst, dstPerms); err != nil {
 			if !os.IsExist(err) {
-				PrintError("❌ failed to create destination folder \"%s\": %v", index, dst, err)
+				log.Error("failed to create destination folder", "path", dst, "err", err)
 				return
 			}
 		}
 		if err := misc.CopyFolder(src, dst, false); err != nil {
-			PrintError("❌ failed to load folder from \"%s\" to \"%s\": %v", index, src, dst, err)
+			log.Error("failed to load folder from source to destination", "source", src, "destination", dst, "err", err)
 			return
 		}
 	} else {
 		if err := misc.CopyFile(src, dst); err != nil {
-			PrintError("❌ failed to load file from \"%s\" to \"%s\": %v", index, src, dst, err)
+			log.Error("failed to load file from source to destination", "source", src, "destination", dst, "err", err)
 			return
 		}
 	}
@@ -210,8 +205,4 @@ func (e *Items) CleanUp(removedLines []string) error {
 	}
 
 	return nil
-}
-
-func PrintError(err string, values ...interface{}) {
-	color.Error.Write([]byte(color.RedString(err+"\n", values...)))
 }
