@@ -3,8 +3,11 @@
 ## [Unreleased]
 
 
+<a name="v0.6.2"></a>
+## [v0.6.2] - 2023-07-15
+
 <a name="v0.6.1"></a>
-## [v0.6.1] - 2022-10-02
+## [v0.6.1] - 2022-10-04
 ### Features
 - **ssh:** add possibilty to use multiple SSH configurations
 
@@ -22,7 +25,7 @@
 
 
 <a name="v0.5.0"></a>
-## [v0.5.0] - 2022-07-10
+## [v0.5.0] - 2022-08-01
 ### Bug Fixes
 - **git:** use go-git for adding removed file (workaround)
 
@@ -31,7 +34,7 @@
 
 
 <a name="v0.4.0"></a>
-## [v0.4.0] - 2022-06-16
+## [v0.4.0] - 2022-08-01
 ### Bug Fixes
 - **config:** don't throw error when file not available on OS
 - **save:** remove folder before copy (avoid unwanted files)
@@ -42,17 +45,15 @@
 
 
 <a name="v0.3.0"></a>
-## [v0.3.0] - 2022-06-01
+## [v0.3.0] - 2022-08-01
 ### Features
 - **cli:** packages are disabled by default
 - **sync:** add .ignore file to filter folder's content
 
 
 <a name="v0.2.0"></a>
-## [v0.2.0] - 2022-05-23
+## [v0.2.0] - 2022-08-01
 ### Bug Fixes
-- **config:** fix config path check
-- **copy:** use io.Copy instead of custom copy
 - **git:** use git binary for "git add"
 - **git:** deleted files are not pushed
 - **git:** add error handling and repo URL from config
@@ -62,24 +63,15 @@
 ### Code Refactoring
 - **archi:** reduce base code to one struct
 - **cli:** separate functions from CLI for lisibility
-- **config:** unmarshal configuration instead of raw read
 - **logging:** drop pterm
 
 ### Features
-- **cli:** add configuration-file persistant flag
 - **cli:** add git push option with message
-- **cli:** add save and load features
-- **cli:** add init sub-command
-- **cli:** add copy folder
-- **cli:** add save command
-- **cli:** implement pkgs installation
-- **config:** update git configuration
-- **config:** add yaml tags for yaml.v3
 - **index:** add indexing system
 
 
 <a name="v0.1.0"></a>
-## v0.1.0 - 2022-02-27
+## v0.1.0 - 2022-07-31
 ### Bug Fixes
 - **config:** fix config path check
 - **copy:** use io.Copy instead of custom copy
@@ -89,16 +81,17 @@
 
 ### Features
 - **cli:** add save and load features
-- **cli:** add init sub-command
 - **cli:** add copy folder
 - **cli:** add save command
 - **cli:** add configuration-file persistant flag
 - **cli:** implement pkgs installation
-- **config:** update git configuration
+- **cli:** add init sub-command
 - **config:** add yaml tags for yaml.v3
+- **config:** update git configuration
 
 
-[Unreleased]: https://gitea.antoine-langlois.net/DataHearth/config-mapper/compare/v0.6.1...HEAD
+[Unreleased]: https://gitea.antoine-langlois.net/DataHearth/config-mapper/compare/v0.6.2...HEAD
+[v0.6.2]: https://gitea.antoine-langlois.net/DataHearth/config-mapper/compare/v0.6.1...v0.6.2
 [v0.6.1]: https://gitea.antoine-langlois.net/DataHearth/config-mapper/compare/v0.6.0...v0.6.1
 [v0.6.0]: https://gitea.antoine-langlois.net/DataHearth/config-mapper/compare/v0.5.0...v0.6.0
 [v0.5.0]: https://gitea.antoine-langlois.net/DataHearth/config-mapper/compare/v0.4.0...v0.5.0
