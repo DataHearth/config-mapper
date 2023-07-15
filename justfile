@@ -1,3 +1,4 @@
+set dotenv-load
 set shell := ["zsh", "-uc"]
 
 default:
