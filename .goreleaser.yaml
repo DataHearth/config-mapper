@@ -8,13 +8,26 @@ builds:
       - linux
       - windows
       - darwin
+    goarch:
+      - "386"
+      - amd64
+      - arm
+      - arm64
 archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      386: i386
-      amd64: x86_64
+  - format: tar.gz
+    files:
+      - LICENSE
+      - README.md
+      - .config-mapper.yml.template
+      - CHANGELOG.md
+    name_template: >-
+      {{ .ProjectName }}_
+      {{ .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+
 gitea_urls:
   api: https://gitea.antoine-langlois.net/api/v1
   download: https://gitea.antoine-langlois.net
