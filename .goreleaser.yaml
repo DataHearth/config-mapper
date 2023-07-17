@@ -31,12 +31,17 @@ archives:
 gitea_urls:
   api: https://gitea.antoine-langlois.net/api/v1
   download: https://gitea.antoine-langlois.net
+
 release:
   gitea:
     owner: DataHearth
     name: config-mapper
   mode: append
+
 checksum:
   name_template: "checksums.txt"
+
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
+
+force_token: gitea
