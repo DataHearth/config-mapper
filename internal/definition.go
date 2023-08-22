@@ -1,10 +1,19 @@
-package configuration
+package internal
 
 type Configuration struct {
 	Path            string      `yaml:"path"`
 	Storage         Storage     `yaml:"storage"`
 	Items           []Item      `yaml:"items"`
 	PackageManagers PkgManagers `yaml:"package-managers"`
+	Logging         Logging     `yaml:"logging"`
+}
+
+type Logging struct {
+	Level          string `yaml:"log-level,omitempty"`
+	EnableTime     bool   `yaml:"time,omitempty"`
+	TimeFormat     string `yaml:"time-format,omitempty"`
+	File           string `yaml:"file,omitempty"`
+	DisableConsole bool   `yaml:"disable-console"`
 }
 
 type Item struct {

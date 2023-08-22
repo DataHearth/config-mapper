@@ -7,7 +7,6 @@ import (
 	"runtime"
 	"strings"
 
-	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/configuration"
 	"github.com/charmbracelet/log"
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
@@ -15,7 +14,7 @@ import (
 )
 
 // InstallPackages install all packages from the configuration file by installation order
-func InstallPackages(c configuration.PkgManagers) error {
+func InstallPackages(c PkgManagers) error {
 	pkgManagers := map[string]bool{}
 	for _, pkgManager := range viper.GetStringSlice("exclude-pkg-managers") {
 		pkgManagers[pkgManager] = true

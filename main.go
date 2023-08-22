@@ -1,87 +1,162 @@
 package main
 
 import (
-	"strconv"
-	"time"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 
-	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/logging"
+	"gitea.antoine-langlois.net/datahearth/config-mapper/internal"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/exp/slices"
+	"gopkg.in/yaml.v3"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "config-mapper",
-	Short: "Manage your systems configuration",
-	Long: `config-mapper aims to help you manage your configurations between systems
+var (
+	configuration internal.Configuration
+	logFormatter  = new(internal.LoggerFormatter)
+	app           = &cli.App{
+		Version:     "v0.6.2",
+		Name:        "config-mapper",
+		Description: "Manage your systems configuration",
+		UsageText: `config-mapper aims to help you manage your configurations between systems
 		with a single configuration file.`,
-	Version: "v0.6.2",
-}
-var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Initialize your configuration folder",
-	Long: `Initialize will retrieve your configuration folder from the source location and
-		copy it into the destination field`,
-	Run: initCommand,
-}
-var loadCmd = &cobra.Command{
-	Use:   "load",
-	Short: "Load your configurations onto your system",
-	Long: `Load your files, folders and package managers deps configurations onto your new
-		onto your new system based on your configuration file`,
-	Run: load,
-}
-var saveCmd = &cobra.Command{
-	Use:   "save",
-	Short: "save your configurations onto your saved location",
-	Long: `Save your files, folders and package managers deps configurations onto your
-		 saved location based on your configuration file`,
-	Run: save,
-}
-var installCmd = &cobra.Command{
-	Use:   "install",
-	Short: "install additional tools",
-	Long:  `install additional tools like package managers, programming languages, etc.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		logrus.Fatal("install command not implemented yet")
-	},
-}
+		Authors: []*cli.Author{
+			{
+				Name:  "Antoine Langlois",
+				Email: "antoine.l@antoine-langlois.net",
+			},
+		},
+		Suggest:              true,
+		EnableBashCompletion: true,
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Aliases: []string{"v"},
+				Usage:   "logs will be more verbose",
+			},
+			&cli.StringFlag{
+				Name:    "config",
+				Aliases: []string{"c"},
+				Usage:   "location of configuration file",
+				Value:   "$HOME/.config-mapper.yml",
+				Action: func(ctx *cli.Context, s string) error {
+					path, err := internal.ResolvePath(s)
+					if err != nil {
+						return err
+					}
+					stat, err := os.Stat(path)
+					if err != nil {
+						return err
+					}
+
+					if stat.IsDir() {
+						return fmt.Errorf("--config must be a file. Found directory")
+					}
+
+					if !slices.Contains([]string{".yml", ".yaml"}, filepath.Ext(path)) {
+						return fmt.Errorf("--config must be a \".yml|yaml\" file")
+					}
+
+					return nil
+				},
+			},
+		},
+		Commands: []*cli.Command{
+			{
+				Name:    "init",
+				Aliases: []string{"i"},
+				Usage:   "Initialize your configuration folder",
+				UsageText: `Initialize will retrieve your configuration folder from the source location and
+					copy it into the destination field`,
+				Action: initCommand,
+				Before: before,
+			},
+			{
+				Name:    "load",
+				Aliases: []string{"l"},
+				Usage:   "Load your configurations onto your system",
+				UsageText: `Load your items and package managers dependencies onto your new
+					system based on your configuration file`,
+				Action: loadCommand,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:     "items",
+						Usage:    "Items will not be loaded",
+						Aliases:  []string{"i"},
+						Category: "Exclude",
+					},
+					&cli.BoolFlag{
+						Name:    "packages",
+						Usage:   "Packages will be installed",
+						Aliases: []string{"p"},
+					},
+					&cli.StringSliceFlag{
+						Name:     "package-managers",
+						Usage:    "Exclude packages from specified package managers to be installed",
+						Category: "Exclude",
+						Aliases:  []string{"P"},
+						Action: func(ctx *cli.Context, s []string) error {
+							if !ctx.Bool("packages") {
+								return fmt.Errorf("--packages is required to exclude package managers")
+							}
+
+							return nil
+						},
+					},
+				},
+				Before: before,
+			},
+			{
+				Name:      "save",
+				Aliases:   []string{"s"},
+				Usage:     "save your configurations onto your saved location",
+				UsageText: `Save your items onto your saved location based on your configuration file`,
+				Action:    saveCommand,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "push",
+						Usage:   "Push changes to remote repository",
+						Aliases: []string{"p"},
+					},
+					&cli.StringFlag{
+						Name:    "message",
+						Usage:   "Commit message when pushing repository",
+						Aliases: []string{"m"},
+						Action: func(ctx *cli.Context, s string) error {
+							if !ctx.Bool("push") {
+								return fmt.Errorf("--push option is required to set a message")
+							}
+							if len(strings.Trim(s, " ")) == 0 {
+								return fmt.Errorf("message must contain at least one character")
+							}
+
+							return nil
+						},
+					},
+				},
+				Before: before,
+			},
+		},
+	}
+)
 
 func init() {
-	logrus.SetFormatter(new(logging.LoggerFormatter))
-
-	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(loadCmd)
-	rootCmd.AddCommand(saveCmd)
-	rootCmd.AddCommand(installCmd)
-
-	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "STDOUT will be more verbose")
-	rootCmd.PersistentFlags().StringP("configuration-file", "c", "", "location of configuration file")
-	rootCmd.PersistentFlags().String("ssh-user", "", "SSH username to retrieve configuration file")
-	rootCmd.PersistentFlags().String("ssh-password", "", "SSH password to retrieve configuration file")
-	rootCmd.PersistentFlags().String("ssh-key", "", "SSH key to retrieve configuration file (if a passphrase is needed, use the \"CONFIG_MAPPER_PASS\" env variable")
-
-	loadCmd.Flags().Bool("disable-files", false, "files will be ignored")
-	loadCmd.Flags().Bool("disable-folders", false, "folders will be ignored")
-	loadCmd.Flags().Bool("pkgs", false, "packages will be installed")
-	loadCmd.Flags().StringSlice("exclude-pkg-managers", []string{}, "package managers to exclude (comma separated)")
-
-	saveCmd.Flags().Bool("disable-files", false, "files will be ignored")
-	saveCmd.Flags().Bool("disable-folders", false, "folders will be ignored")
-	saveCmd.Flags().BoolP("push", "p", false, "new configurations will be committed and pushed")
-	saveCmd.Flags().StringP("message", "m", strconv.FormatInt(time.Now().Unix(), 10), "combined with --push to set a commit message")
-	saveCmd.Flags().Bool("disable-index", false, "configuration index will not be updated")
+	logrus.SetFormatter(logFormatter)
 }
 
 func main() {
-	if err := rootCmd.Execute(); err != nil {
-		logrus.Fatal("an error occured while running command", "err", err)
+	cli.VersionFlag = &cli.BoolFlag{
+		Name:    "version",
+		Aliases: []string{"V"},
+		Usage:   "config-mapper version",
 	}
-}
 
-func save(cmd *cobra.Command, args []string) {
-}
-
-func load(cmd *cobra.Command, args []string) {
+	if err := app.Run(os.Args); err != nil {
+		logrus.Fatalln(err)
+	}
 }
 
 // func save(cmd *cobra.Command, args []string) {
@@ -158,5 +233,85 @@ func load(cmd *cobra.Command, args []string) {
 // 	}
 // }
 
-func initCommand(cmd *cobra.Command, args []string) {
+func initCommand(Ctx *cli.Context) error {
+	if _, err := internal.NewRepository(configuration.Storage.Git, configuration.Path); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func saveCommand(Ctx *cli.Context) error {
+	return nil
+}
+
+func loadCommand(Ctx *cli.Context) error {
+	return nil
+}
+
+func before(ctx *cli.Context) error {
+	configPath, err := internal.ResolvePath(ctx.String("config"))
+	if err != nil {
+		return err
+	}
+
+	f, err := os.ReadFile(configPath)
+	if err != nil {
+		return err
+	}
+
+	if err := yaml.Unmarshal(f, &configuration); err != nil {
+		return err
+	}
+
+	if configuration.Logging.Level != "" {
+		lvl, err := logrus.ParseLevel(configuration.Logging.Level)
+		if err != nil {
+			return err
+		}
+
+		logrus.SetLevel(lvl)
+	}
+	if configuration.Logging.File != "" {
+		loggingFile := configuration.Logging.File
+		s, err := os.Stat(filepath.Dir(loggingFile))
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return err
+			}
+
+			if err := os.MkdirAll(filepath.Dir(loggingFile), 0755); err != nil {
+				return err
+			}
+		}
+
+		if !s.IsDir() {
+			return fmt.Errorf("parent path segment of \"log-file\" field is a file")
+		}
+
+		f, err := os.OpenFile(configuration.Logging.File, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
+		if err != nil {
+			return err
+		}
+
+		var out io.Writer
+		if configuration.Logging.DisableConsole {
+			out = f
+		} else {
+			out = io.MultiWriter(os.Stdout, f)
+		}
+
+		logrus.SetOutput(out)
+	}
+
+	if configuration.Logging.EnableTime {
+		format := "02/01/2006 15:04:05"
+		if configuration.Logging.TimeFormat != "" {
+			format = configuration.Logging.TimeFormat
+		}
+
+		logFormatter.TimeFormat = format
+	}
+
+	return nil
 }
