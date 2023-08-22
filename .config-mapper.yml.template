@@ -1,32 +1,60 @@
+# OPTIONAL: where your configuration is stored locally [default: $HOME/.config/config-mapper]
+path: /path/to/folder
+logging:
+  log-level: info # OPTIONAL: [default: info] available: debug, info, warn, error, fatal
+  time: true # OPTIONAL: [default: false] display time in logs
+  time-format: 02/01/2006 15:04:05 # OPTIONAL: [default: 02/01/2006 15:04:05] format of time displayed in logs
+  file: /path/to/logfile # OPTIONAL: [default: no file logging] path to log file
+  out: stdout # OPTIONAL: [default: stdout] where to log: stdout, stderr
+
 storage:
-  # Where will be the repository folder located ? [DEFAULT: MacOS($TMPDIR/config-mapper) | Linux(/tmp/config-mapper)]
-  location: /path/to/folder
   git:
-    # username used for commit author
+    # REQUIRED: username used for commit author
     name: USERNAME
-    # email used for commit author
+    # REQUIRED: email used for commit author
     email: EMAIL
+    # REQUIRED: git repository url
     repository: git@github.com:DataHearth/my-config.git
+
+    # REQUIRED (if ssh-auth not set): basic authentication credentials for git repository
     basic-auth:
       username: USERNAME
       # * NOTE: if you're having trouble with error "authentication required", you should maybe use a token access
       # * In some cases, it's due to 2FA authentication enabled on the git hosting provider
       password: TOKEN
-    # * by default, if ssh dict is set with its keys filled, I'll try to clone with SSH
+
+    # REQUIRED (if basic-auth not set): list of ssh keys used to authenticate to git repository
     ssh:
-      # path can be relative and can contain environment variables
-      private-key: /path/to/private/key
-      passphrase: PASSPHRASE
+      - private-key: /path/to/private/key
+        passphrase: PASSPHRASE
 
-# NOTE: the $LOCATION if refering to the "storage.location" path. It'll be replaced automatically
-# The left part of ":" is your repository location and right part where it should be located on your system
-files:
-  - darwin: "$LOCATION/macos/.zshrc:~/.zshrc"
-    linux: "$LOCATION/linux/.zshrc:~/.zshrc"
-
-folders:
-  - darwin: "$LOCATION/macos/.config:~/.config"
-    linux: "$LOCATION/macos/.config:~/.config"
+# REQUIRED: list of items to save in configuration repository
+items:
+  - name: .zshrc # OPTIONAL: [default: name of last path segment in "(universal|darwin|windows|linux).local" key]
+    # REQUIRED (if any of "darwin|windows|linux" keys aren't set): universal location for all operating systems
+    universal:
+      # REQUIRED: path to local file
+      local: /path/to/file
+      # REQUIRED: path to remote file (absolute path where "/" is the root of the repository)
+      remote: /remote/path
+    # REQUIRED (if "universal" key is not set): location for darwin operating system
+    darwin:
+      # REQUIRED: path to local file
+      local: /path/to/file
+      # REQUIRED: path to remote file (absolute path where "/" is the root of the repository)
+      remote: /remote/path
+    # REQUIRED (if "universal" key is not set): location for windows operating system
+    windows:
+      # REQUIRED: path to local file
+      local: /path/to/file
+      # REQUIRED: path to remote file (absolute path where "/" is the root of the repository)
+      remote: /remote/path
+    # REQUIRED (if "universal" key is not set): location for linux operating system
+    linux:
+      # REQUIRED: path to local file
+      local: /path/to/file
+      # REQUIRED: path to remote file (absolute path where "/" is the root of the repository)
+      remote: /remote/path
 
 package-managers:
   # available: brew, pip (pip check also for pip3), cargo, apt, npm, go

@@ -6,14 +6,13 @@ import (
 	"os"
 	"time"
 
+	"gitea.antoine-langlois.net/datahearth/config-mapper/internal"
 	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/configuration"
-	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/misc"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	"github.com/mitchellh/mapstructure"
 )
 
 var (
@@ -42,60 +41,35 @@ type author struct {
 
 func NewRepository(config configuration.Git, repoPath string) (RepositoryActions, error) {
 	var auth transport.AuthMethod
-	if config.URL == "" {
+	if config.Repository == "" {
 		return nil, errors.New("a repository URI is needed (either using GIT protocol or HTTPS)")
 	}
-	repoPath, err := misc.AbsolutePath(repoPath)
+
+	repoPath, err := internal.ResolvePath(repoPath)
 	if err != nil {
 		return nil, err
 	}
 
-	switch sshConfig := config.SSH.(type) {
-	case map[string]interface{}:
-		var outConfig configuration.Ssh
-		if err := mapstructure.Decode(sshConfig, &outConfig); err != nil {
-			return nil, err
-		}
-
-		auth, err = getSSHAuthMethod(outConfig)
+	for i, c := range config.SSH {
+		auth, err = getSSHAuthMethod(c)
 		if err != nil {
-			return nil, err
+			fmt.Printf("failed to create SSH authentication method for configuration n°%d: %v\n", i, err)
+			continue
 		}
-	case []interface{}:
-		for i, c := range sshConfig {
-			if _, ok := c.(map[interface{}]interface{}); !ok {
-				fmt.Printf("invalid format for configuration n°%d", i)
-				continue
-			}
+	}
 
-			var outConfig configuration.Ssh
-			if err := mapstructure.Decode(c, &outConfig); err != nil {
-				fmt.Printf("failed to decode ssh configuration n°%d: %v\n", i, err)
-				continue
-			}
-
-			auth, err = getSSHAuthMethod(outConfig)
-			if err != nil {
-				fmt.Printf("failed to create SSH authentication method for configuration n°%d: %v\n", i, err)
-				continue
-			}
+	if auth == nil {
+		auth = &http.BasicAuth{
+			Username: config.BasicAuth.Username,
+			Password: config.BasicAuth.Password,
 		}
-
-		if auth == nil {
-			auth = &http.BasicAuth{
-				Username: config.BasicAuth.Username,
-				Password: config.BasicAuth.Password,
-			}
-		}
-	default:
-		return nil, errors.New("git ssh configuration canno't be unmarshaled. Please, pass a valid configuration")
 	}
 
 	repo := &Repository{
 		auth:       auth,
 		repository: nil,
 		repoPath:   repoPath,
-		url:        config.URL,
+		url:        config.Repository,
 		author: author{
 			name:  config.Name,
 			email: config.Email,
@@ -143,10 +117,9 @@ func (r *Repository) openRepository() error {
 		return err
 	}
 
-	err = w.Pull(&git.PullOptions{
+	if err := w.Pull(&git.PullOptions{
 		Auth: r.auth,
-	})
-	if err != nil && err != git.NoErrAlreadyUpToDate {
+	}); err != nil && err != git.NoErrAlreadyUpToDate {
 		return err
 	}
 
@@ -166,8 +139,7 @@ func (r *Repository) PushChanges(msg string, newLines, removedLines []string) er
 	}
 
 	for file := range status {
-		_, err = w.Add(file)
-		if err != nil {
+		if _, err := w.Add(file); err != nil {
 			return err
 		}
 	}
@@ -178,7 +150,9 @@ func (r *Repository) PushChanges(msg string, newLines, removedLines []string) er
 		return err
 	}
 
-	return r.repository.Push(&git.PushOptions{})
+	return r.repository.Push(&git.PushOptions{
+		Auth: r.auth,
+	})
 }
 
 func (r *Repository) GetWorktree() (*git.Worktree, error) {
@@ -193,18 +167,22 @@ func (r *Repository) GetAuthor() *object.Signature {
 	}
 }
 
-func getSSHAuthMethod(config configuration.Ssh) (transport.AuthMethod, error) {
-	if config.Passphrase == "" && config.PrivateKey == "" {
-		return nil, errors.New("passphrase and private are empty")
+func getSSHAuthMethod(config configuration.SshAuth) (transport.AuthMethod, error) {
+	if config.PrivateKey == "" {
+		return nil, errors.New("\"private-key\" field is empty")
 	}
 
-	privateKey, err := misc.AbsolutePath(config.PrivateKey)
+	privateKey, err := internal.ResolvePath(config.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := os.Stat(privateKey); err != nil {
+	s, err := os.Stat(privateKey)
+	if err != nil {
 		return nil, err
+	}
+	if s.IsDir() {
+		return nil, errors.New("private key is a directory")
 	}
 
 	auth, err := ssh.NewPublicKeysFromFile("git", privateKey, config.Passphrase)
