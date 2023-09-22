@@ -67,7 +67,7 @@ var (
 				UsageText: `Initialize will retrieve your configuration folder from the source location and
 					copy it into the destination field`,
 				Action: initCommand,
-				Before: before,
+				Before: beforeAction,
 			},
 			{
 				Name:    "load",
@@ -102,7 +102,7 @@ var (
 						},
 					},
 				},
-				Before: before,
+				Before: beforeAction,
 			},
 			{
 				Name:      "save",
@@ -132,7 +132,7 @@ var (
 						},
 					},
 				},
-				Before: before,
+				Before: beforeAction,
 			},
 			{
 				Name:  "install",
@@ -143,8 +143,9 @@ var (
 				Action:    installCommand,
 			},
 			{
-				Name:  "check",
-				Usage: "Check if remote has updates",
+				Name:    "check",
+				Aliases: []string{"c"},
+				Usage:   "Check if remote has updates",
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
 						Name:  "pull",
@@ -152,6 +153,7 @@ var (
 					},
 				},
 				Action: checkCommand,
+				Before: beforeAction,
 			},
 		},
 	}
@@ -168,7 +170,13 @@ func main() {
 }
 
 func initCommand(ctx *cli.Context) error {
+	if _, err := os.Stat(configuration.Path); err == nil {
+		logrus.Warnf("configuration folder already exists at %s", configuration.Path)
+		return nil
+	}
+
 	logrus.WithField("path", configuration.Path).Infoln("initializing configuration folder...")
+
 	if _, err := internal.NewRepository(configuration.Storage.Git, configuration.Path, true); err != nil {
 		return err
 	}
@@ -208,12 +216,14 @@ func checkCommand(ctx *cli.Context) error {
 				return err
 			}
 		}
+	} else {
+		logrus.Infoln("Configuration is up-to-date")
 	}
 
 	return nil
 }
 
-func before(ctx *cli.Context) error {
+func beforeAction(ctx *cli.Context) error {
 	configPath, err := internal.ResolvePath(ctx.String("config"))
 	if err != nil {
 		return err

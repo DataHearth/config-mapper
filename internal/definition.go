@@ -37,8 +37,8 @@ type Git struct {
 	Repository string    `yaml:"repository"`
 	Name       string    `yaml:"name"`
 	Email      string    `yaml:"email"`
-	BasicAuth  BasicAuth `yaml:"basic-auth"`
-	SSH        []SshAuth `yaml:"ssh-auth"`
+	BasicAuth  BasicAuth `yaml:"basic"`
+	SshAuth    []SshAuth `yaml:"ssh"`
 }
 
 type BasicAuth struct {

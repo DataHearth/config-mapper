@@ -5,7 +5,7 @@ logging:
   time: true # OPTIONAL: [default: false] display time in logs
   time-format: 02/01/2006 15:04:05 # OPTIONAL: [default: 02/01/2006 15:04:05] format of time displayed in logs
   file: /path/to/logfile # OPTIONAL: [default: no file logging] path to log file
-  disable-console: true # OPTIONAL: [default: true] should logs be printed in the terminal
+  disable-console: false # OPTIONAL: [default: false] should logs be printed in the terminal
 
 storage:
   git:

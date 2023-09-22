@@ -15,16 +15,15 @@ import (
 )
 
 type Repository struct {
-	auth       []transport.AuthMethod
-	repository *git.Repository
-	repoPath   string
-	url        string
-	author     struct {
-		name  string
-		email string
-	}
+	availableAuth []transport.AuthMethod
+	auth          transport.AuthMethod
+	repository    *git.Repository
+	repoPath      string
+	url           string
+	author        *object.Signature
 }
 
+// NewRepository creates a new repository struct by either cloning or opening the repository
 func NewRepository(config Git, repoPath string, clone bool) (*Repository, error) {
 	var auth []transport.AuthMethod = nil
 	if config.Repository == "" {
@@ -36,7 +35,7 @@ func NewRepository(config Git, repoPath string, clone bool) (*Repository, error)
 		return nil, err
 	}
 
-	for i, c := range config.SSH {
+	for i, c := range config.SshAuth {
 		sshAuth, err := getSSHAuthMethod(c)
 		if err != nil {
 			fmt.Printf("failed to create SSH authentication method for configuration n°%d: %v\n", i, err)
@@ -57,16 +56,14 @@ func NewRepository(config Git, repoPath string, clone bool) (*Repository, error)
 	}
 
 	repo := &Repository{
-		auth:       auth,
-		repository: nil,
-		repoPath:   repoPath,
-		url:        config.Repository,
-		author: struct {
-			name  string
-			email string
-		}{
-			name:  config.Name,
-			email: config.Email,
+		availableAuth: auth,
+		auth:          nil,
+		repository:    nil,
+		repoPath:      repoPath,
+		url:           config.Repository,
+		author: &object.Signature{
+			Name:  config.Name,
+			Email: config.Email,
 		},
 	}
 
@@ -83,6 +80,7 @@ func NewRepository(config Git, repoPath string, clone bool) (*Repository, error)
 	return repo, nil
 }
 
+// openRepository opens the repository at the given path
 func (r *Repository) openRepository() error {
 	repo, err := git.PlainOpen(r.repoPath)
 	if err != nil {
@@ -94,9 +92,9 @@ func (r *Repository) openRepository() error {
 		return err
 	}
 
-	if r.auth != nil {
+	if r.availableAuth != nil {
 		pulled := false
-		for _, auth := range r.auth {
+		for _, auth := range r.availableAuth {
 			err := w.Pull(&git.PullOptions{
 				Auth: auth,
 			})
@@ -113,6 +111,7 @@ func (r *Repository) openRepository() error {
 			}
 
 			pulled = true
+			r.auth = auth
 			break
 		}
 
@@ -130,6 +129,7 @@ func (r *Repository) openRepository() error {
 	return nil
 }
 
+// PushChanges pushes changes to the remote repository
 func (r *Repository) PushChanges(msg string, newLines, removedLines []string) error {
 	w, err := r.repository.Worktree()
 	if err != nil {
@@ -147,93 +147,41 @@ func (r *Repository) PushChanges(msg string, newLines, removedLines []string) er
 		}
 	}
 
+	author := r.author
+	author.When = time.Now()
 	if _, err := w.Commit(msg, &git.CommitOptions{
-		Author: r.GetAuthor(),
+		Author: author,
 	}); err != nil {
 		return err
 	}
 
-	if r.auth != nil {
-		pushed := false
-		for _, auth := range r.auth {
-			err := r.repository.Push(&git.PushOptions{
-				Auth: auth,
-			})
-			if err != nil {
-				if checkAuthErr(err) {
-					logrus.WithField("auth", auth.String()).Warn("failed to authenticate. Trying next auth if exists")
-					continue
-				}
-
-				return err
-			}
-
-			pushed = true
-			break
-		}
-
-		if !pushed {
-			return fmt.Errorf("authentication failed for git repository")
-		}
-	}
-
-	return r.repository.Push(&git.PushOptions{})
-}
-
-func (r *Repository) GetWorktree() (*git.Worktree, error) {
-	return r.repository.Worktree()
-}
-
-func (r *Repository) GetAuthor() *object.Signature {
-	return &object.Signature{
-		Name:  r.author.name,
-		Email: r.author.email,
-		When:  time.Now(),
-	}
+	return r.repository.Push(&git.PushOptions{
+		Auth: r.auth,
+	})
 }
 
 // FetchChanges fetches changes from the remote repository. If changes are fetched,
 // the function returns true, otherwise false.
 func (r *Repository) FetchChanges() (bool, error) {
-	if r.auth != nil {
-		for _, auth := range r.auth {
-			if err := r.repository.Fetch(&git.FetchOptions{
-				Auth: auth,
-			}); err != nil {
-				if checkAuthErr(err) {
-					logrus.WithField("auth", auth.String()).Warn("failed to authenticate. Trying next auth if exists")
-					continue
-				}
-				if err == git.NoErrAlreadyUpToDate {
-					return false, nil
-				}
-
-				return false, err
-			}
-
-			return true, nil
-		}
-	} else {
-		if err := r.repository.Fetch(&git.FetchOptions{}); err != nil {
-			if err == git.NoErrAlreadyUpToDate {
-				return false, nil
-			}
-
-			return false, err
+	if err := r.repository.Fetch(&git.FetchOptions{
+		Auth: r.auth,
+	}); err != nil {
+		if err == git.NoErrAlreadyUpToDate {
+			return false, nil
 		}
 
-		return true, nil
+		return false, err
 	}
 
-	return false, nil
+	return true, nil
 }
 
 // cloneRepository clones the repository into the given path
 func (r *Repository) cloneRepository() error {
 	var repo *git.Repository
 	var err error
-	if r.auth != nil {
-		for _, auth := range r.auth {
+	if r.availableAuth != nil {
+		for _, auth := range r.availableAuth {
 			repo, err = git.PlainClone(r.repoPath, false, &git.CloneOptions{
 				URL:  r.url,
 				Auth: auth,
@@ -247,6 +195,7 @@ func (r *Repository) cloneRepository() error {
 				return err
 			}
 
+			r.auth = auth
 			break
 		}
 
@@ -267,15 +216,16 @@ func (r *Repository) cloneRepository() error {
 	return nil
 }
 
+// Pull pulls changes from the remote repository
 func (r *Repository) Pull() error {
 	w, err := r.repository.Worktree()
 	if err != nil {
 		return err
 	}
 
-	if r.auth != nil {
-	}
-	return nil
+	return w.Pull(&git.PullOptions{
+		Auth: r.auth,
+	})
 }
 
 // getSSHAuthMethod returns an authentication method for SSH
