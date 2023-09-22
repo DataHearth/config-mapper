@@ -14,31 +14,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	ErrDirIsFile = errors.New("path is a file")
-)
-
-type RepositoryActions interface {
-	PushChanges(msg string, newLines, removedLines []string) error
-	GetWorktree() (*git.Worktree, error)
-	GetAuthor() *object.Signature
-	openRepository() error
-}
-
 type Repository struct {
 	auth       []transport.AuthMethod
 	repository *git.Repository
 	repoPath   string
-	author     author
 	url        string
+	author     struct {
+		name  string
+		email string
+	}
 }
 
-type author struct {
-	name  string
-	email string
-}
-
-func NewRepository(config Git, repoPath string) (RepositoryActions, error) {
+func NewRepository(config Git, repoPath string, clone bool) (*Repository, error) {
 	var auth []transport.AuthMethod = nil
 	if config.Repository == "" {
 		return nil, errors.New("a repository URI is needed (either using GIT protocol or HTTPS)")
@@ -74,68 +61,29 @@ func NewRepository(config Git, repoPath string) (RepositoryActions, error) {
 		repository: nil,
 		repoPath:   repoPath,
 		url:        config.Repository,
-		author: author{
+		author: struct {
+			name  string
+			email string
+		}{
 			name:  config.Name,
 			email: config.Email,
 		},
 	}
 
-	if err := repo.openRepository(); err != nil {
-		return nil, err
+	if clone {
+		if err := repo.cloneRepository(); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := repo.openRepository(); err != nil {
+			return nil, err
+		}
 	}
 
 	return repo, nil
 }
 
 func (r *Repository) openRepository() error {
-	s, err := os.Stat(r.repoPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			var repo *git.Repository
-			var err error
-			if r.auth != nil {
-				for _, auth := range r.auth {
-					repo, err = git.PlainClone(r.repoPath, false, &git.CloneOptions{
-						URL:      r.url,
-						Progress: os.Stdout,
-						Auth:     auth,
-					})
-					if err != nil {
-						if checkAuthErr(err) {
-							logrus.WithField("auth", auth.String()).Warn("failed to authenticate. Trying next auth if exists")
-							continue
-						}
-
-						return err
-					}
-
-					break
-				}
-
-				if repo == nil {
-					return fmt.Errorf("authentication failed for git repository")
-				}
-			} else {
-				repo, err = git.PlainClone(r.repoPath, false, &git.CloneOptions{
-					URL:      r.url,
-					Progress: os.Stdout,
-				})
-				if err != nil {
-					return err
-				}
-			}
-
-			r.repository = repo
-			return nil
-		}
-
-		return err
-	}
-
-	if !s.IsDir() {
-		return ErrDirIsFile
-	}
-
 	repo, err := git.PlainOpen(r.repoPath)
 	if err != nil {
 		return err
@@ -244,6 +192,93 @@ func (r *Repository) GetAuthor() *object.Signature {
 	}
 }
 
+// FetchChanges fetches changes from the remote repository. If changes are fetched,
+// the function returns true, otherwise false.
+func (r *Repository) FetchChanges() (bool, error) {
+	if r.auth != nil {
+		for _, auth := range r.auth {
+			if err := r.repository.Fetch(&git.FetchOptions{
+				Auth: auth,
+			}); err != nil {
+				if checkAuthErr(err) {
+					logrus.WithField("auth", auth.String()).Warn("failed to authenticate. Trying next auth if exists")
+					continue
+				}
+				if err == git.NoErrAlreadyUpToDate {
+					return false, nil
+				}
+
+				return false, err
+			}
+
+			return true, nil
+		}
+	} else {
+		if err := r.repository.Fetch(&git.FetchOptions{}); err != nil {
+			if err == git.NoErrAlreadyUpToDate {
+				return false, nil
+			}
+
+			return false, err
+		}
+
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// cloneRepository clones the repository into the given path
+func (r *Repository) cloneRepository() error {
+	var repo *git.Repository
+	var err error
+	if r.auth != nil {
+		for _, auth := range r.auth {
+			repo, err = git.PlainClone(r.repoPath, false, &git.CloneOptions{
+				URL:  r.url,
+				Auth: auth,
+			})
+			if err != nil {
+				if checkAuthErr(err) {
+					logrus.WithField("auth", auth.String()).Warn("failed to authenticate. Trying next auth if exists")
+					continue
+				}
+
+				return err
+			}
+
+			break
+		}
+
+		if repo == nil {
+			return fmt.Errorf("authentication failed for git repository")
+		}
+	} else {
+		repo, err = git.PlainClone(r.repoPath, false, &git.CloneOptions{
+			URL: r.url,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	r.repository = repo
+
+	return nil
+}
+
+func (r *Repository) Pull() error {
+	w, err := r.repository.Worktree()
+	if err != nil {
+		return err
+	}
+
+	if r.auth != nil {
+	}
+	return nil
+}
+
+// getSSHAuthMethod returns an authentication method for SSH
 func getSSHAuthMethod(config SshAuth) (transport.AuthMethod, error) {
 	if config.PrivateKey == "" {
 		return nil, errors.New("\"private-key\" field is empty")
@@ -270,6 +305,7 @@ func getSSHAuthMethod(config SshAuth) (transport.AuthMethod, error) {
 	return auth, nil
 }
 
+// checkAuthErr checks if the error is an authentication error
 func checkAuthErr(err error) bool {
 	return err == transport.ErrAuthorizationFailed || err == transport.ErrAuthenticationRequired
 }

@@ -32,11 +32,6 @@ var (
 		Suggest:              true,
 		EnableBashCompletion: true,
 		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:    "verbose",
-				Aliases: []string{"v"},
-				Usage:   "logs will be more verbose",
-			},
 			&cli.StringFlag{
 				Name:    "config",
 				Aliases: []string{"c"},
@@ -139,6 +134,25 @@ var (
 				},
 				Before: before,
 			},
+			{
+				Name:  "install",
+				Usage: "Install additional tools",
+				UsageText: `Install additional tools like package managers (brew, nala), 
+					programming language (golang, rust, python)`,
+				ArgsUsage: "TOOLS",
+				Action:    installCommand,
+			},
+			{
+				Name:  "check",
+				Usage: "Check if remote has updates",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "pull",
+						Usage: "Pull updates if any",
+					},
+				},
+				Action: checkCommand,
+			},
 		},
 	}
 )
@@ -148,104 +162,54 @@ func init() {
 }
 
 func main() {
-	cli.VersionFlag = &cli.BoolFlag{
-		Name:    "version",
-		Aliases: []string{"V"},
-		Usage:   "config-mapper version",
-	}
-
 	if err := app.Run(os.Args); err != nil {
 		logrus.Fatalln(err)
 	}
 }
 
-// func save(cmd *cobra.Command, args []string) {
-// 	var c configuration.Configuration
-// 	if err := viper.Unmarshal(&c); err != nil {
-// 		logrus.Fatal("failed to decode configuration", "err", err)
-// 	}
-
-// 	indexer, err := mapper.NewIndexer(c.Storage.Path)
-// 	if err != nil {
-// 		logrus.Fatal("failed to open the indexer", "err", err)
-// 	}
-
-// 	r, err := git.NewRepository(c.Storage.Git, c.Storage.Path)
-// 	if err != nil {
-// 		logrus.Fatal("failed to open repository", "path", c.Storage.Path, "err", err)
-// 	}
-
-// 	el := mapper.NewItemsActions(nil, c.Storage.Path, r, indexer)
-
-// 	if !viper.GetBool("save-disable-files") {
-// 		el.AddItems(c.Files)
-// 	}
-// 	if !viper.GetBool("save-disable-folders") {
-// 		el.AddItems(c.Folders)
-// 	}
-
-// 	el.Action("save")
-
-// 	if err := el.CleanUp(indexer.RemovedLines()); err != nil {
-// 		logrus.Fatal("failed to clean repository", "err", err)
-// 	}
-
-// 	if viper.GetBool("push") {
-// 		logrus.Info("pushing changes...")
-
-// 		if err := r.PushChanges(viper.GetString("message"), indexer.Lines(), indexer.RemovedLines()); err != nil {
-// 			logrus.Fatal("failed to push changes to repository", "err", err)
-// 		}
-// 	}
-// }
-
-// func load(cmd *cobra.Command, args []string) {
-// 	var c configuration.Configuration
-// 	if err := viper.Unmarshal(&c); err != nil {
-// 		logrus.Fatal("failed to decode configuration", "err", err)
-// 	}
-
-// 	i, err := mapper.NewIndexer(c.Storage.Path)
-// 	if err != nil {
-// 		logrus.Fatal("failed to open the indexer", "err", err)
-// 	}
-
-// 	r, err := git.NewRepository(c.Storage.Git, c.Storage.Path)
-// 	if err != nil {
-// 		logrus.Fatal("failed to open repository", "path", c.Storage.Path, "err", err)
-// 	}
-
-// 	el := mapper.NewItemsActions(nil, c.Storage.Path, r, i)
-
-// 	if !viper.GetBool("load-disable-files") {
-// 		el.AddItems(c.Files)
-// 	}
-// 	if !viper.GetBool("load-disable-folders") {
-// 		el.AddItems(c.Folders)
-// 	}
-
-// 	el.Action("load")
-
-// 	if viper.GetBool("load-enable-pkgs") {
-// 		if err := mapper.InstallPackages(c.PackageManagers); err != nil {
-// 			logrus.Fatal(err)
-// 		}
-// 	}
-// }
-
-func initCommand(Ctx *cli.Context) error {
-	if _, err := internal.NewRepository(configuration.Storage.Git, configuration.Path); err != nil {
+func initCommand(ctx *cli.Context) error {
+	logrus.WithField("path", configuration.Path).Infoln("initializing configuration folder...")
+	if _, err := internal.NewRepository(configuration.Storage.Git, configuration.Path, true); err != nil {
 		return err
 	}
 
+	logrus.Infoln("Everything is ready to go!")
+
 	return nil
 }
 
-func saveCommand(Ctx *cli.Context) error {
+func saveCommand(ctx *cli.Context) error {
 	return nil
 }
 
-func loadCommand(Ctx *cli.Context) error {
+func loadCommand(ctx *cli.Context) error {
+	return nil
+}
+
+func installCommand(ctx *cli.Context) error {
+	return nil
+}
+
+func checkCommand(ctx *cli.Context) error {
+	repo, err := internal.NewRepository(configuration.Storage.Git, configuration.Path, false)
+	if err != nil {
+		return err
+	}
+
+	changes, err := repo.FetchChanges()
+	if err != nil {
+		return err
+	}
+	if changes {
+		logrus.Infoln("Configuration has changed upstream")
+		if ctx.Bool("pull") {
+			logrus.Infoln("Pulling changes...")
+			if err := repo.Pull(); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
