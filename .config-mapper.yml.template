@@ -9,6 +9,7 @@ logging:
 
 storage:
   git:
+    pull: true # OPTIONAL: [default: false] should git repository be pulled before any operation
     # REQUIRED: username used for commit author
     name: USERNAME
     # REQUIRED: email used for commit author

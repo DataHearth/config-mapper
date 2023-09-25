@@ -39,6 +39,7 @@ type Git struct {
 	Email      string    `yaml:"email"`
 	BasicAuth  BasicAuth `yaml:"basic"`
 	SshAuth    []SshAuth `yaml:"ssh"`
+	Pull       bool      `yaml:"pull"`
 }
 
 type BasicAuth struct {

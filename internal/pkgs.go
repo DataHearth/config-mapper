@@ -6,10 +6,10 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
 
-	"github.com/charmbracelet/log"
-	"github.com/gernest/wow"
-	"github.com/gernest/wow/spin"
+	"github.com/briandowns/spinner"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -21,9 +21,10 @@ func InstallPackages(c PkgManagers) error {
 	}
 
 	for _, pkgManager := range c.InstallationOrder {
-		log.Info("installing packages", "package-manager", pkgManager)
+		log := logrus.WithField("package manager", pkgManager)
+		log.Infoln("Installing packages")
 		if _, ok := pkgManagers[pkgManager]; ok {
-			log.Info("skipping package manager", "package-manager", pkgManager)
+			log.Infoln("Skipping...")
 			continue
 		}
 
@@ -44,7 +45,7 @@ func InstallPackages(c PkgManagers) error {
 		case "nala":
 			pkgs = c.Nala
 		default:
-			log.Error("package manager not supported", "package-manager", pkgManager)
+			log.Error("Package manager not supported")
 			continue
 		}
 
@@ -52,23 +53,24 @@ func InstallPackages(c PkgManagers) error {
 			// * pip might not be available on the system but pip3 is
 			if pkgManager == "pip" {
 				if _, err := exec.LookPath("pip3"); err != nil {
-					log.Error("pip and pip3 are not available on your system", "package-manager", pkgManager)
+					log.Error("\"pip\" & \"pip3\" are not available on your system")
 					continue
 				}
 				pkgManager = "pip3"
 			} else {
-				log.Error("package manager not available on your system", "package-manager", pkgManager)
+				log.Error("Package manager not available. Please, install it first")
 				continue
 			}
 		}
+
 		// * for some reason, apt binary is available on darwin. Exclude it to avoid errors
 		if pkgManager == "apt" && runtime.GOOS == "darwin" {
-			log.Error("package manager not available on your system", "package-manager", pkgManager)
+			log.Error("\"apt\" is not available on Darwin")
 			continue
 		}
 
 		if len(pkgs) == 0 {
-			fmt.Printf("✔️ nothing to do\n\n")
+			log.Infoln("Nothing to do")
 			continue
 		}
 
@@ -84,9 +86,10 @@ func InstallPackages(c PkgManagers) error {
 		}
 
 		for i, cmd := range commands {
-			spinner := wow.New(os.Stdout, spin.Get(spin.Dots3), " Installing...")
+			s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+			s.Suffix = "Installing..."
 			if !v {
-				spinner.Start()
+				s.Start()
 			}
 			if err := cmd.Run(); err != nil {
 				if v {
@@ -96,18 +99,19 @@ func InstallPackages(c PkgManagers) error {
 					if i == len(commands)-1 {
 						msg = fmt.Sprintf("%s\n", msg)
 					}
-					spinner.PersistWith(spin.Spinner{Frames: []string{"❌"}}, msg)
+					s.FinalMSG = fmt.Sprintf("\x1b[31mFailed: %s\x1b[0m", msg)
+					s.Stop()
 				}
 				continue
 			}
 
 			if !v {
-				// msg := fmt.Sprintf(" %s %s", color.GreenString("Success\t"), cmd.Args)
 				msg := fmt.Sprintf(" %s", cmd.Args)
 				if i == len(commands)-1 {
 					msg = fmt.Sprintf("%s\n", msg)
 				}
-				spinner.PersistWith(spin.Spinner{Frames: []string{"✔️"}}, msg)
+				s.FinalMSG = fmt.Sprintf("\x1b[32mInstalled: %s\x1b[0m", msg)
+				s.Stop()
 			}
 		}
 	}

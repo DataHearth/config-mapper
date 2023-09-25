@@ -187,6 +187,19 @@ func initCommand(ctx *cli.Context) error {
 }
 
 func saveCommand(ctx *cli.Context) error {
+	repo, err := internal.NewRepository(configuration.Storage.Git, configuration.Path, false)
+	if err != nil {
+		return err
+	}
+
+	if configuration.Storage.Git.Pull {
+		if err := repo.Pull(); err != nil {
+			return err
+		}
+
+		logrus.Debugln("Changes pulled")
+	}
+
 	return nil
 }
 
