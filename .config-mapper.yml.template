@@ -1,12 +1,20 @@
-# OPTIONAL: where your configuration is stored locally [default: $HOME/.config/config-mapper]
-path: /path/to/folder
-logging:
-  log-level: info # OPTIONAL: [default: info] available: debug, info, warn, error, fatal
-  time: true # OPTIONAL: [default: false] display time in logs
-  time-format: 02/01/2006 15:04:05 # OPTIONAL: [default: 02/01/2006 15:04:05] format of time displayed in logs
-  file: /path/to/logfile # OPTIONAL: [default: no file logging] path to log file
-  disable-console: false # OPTIONAL: [default: false] should logs be printed in the terminal
+# ! REQUIRED: id used to identify your configuration folder (should be unique).
+# * NOTE: you can generate a UUIDv4 using "config-mapper gen-uuid --write".
+# * It will generate a UUIDv4 and write it to this file.
+# * If you initialize your configuration folder using "config-mapper init",
+# * this field automatically gets filled with a brand new UUIDv4.
+uuid: 2893211a-fac2-42a6-8f9d-9a8f692a8f04
+# ? OPTIONAL: where your configuration is stored locally.
+# * DEFAULT: $HOME/.local/state/config-mapper
+path: $HOME/.local/state/config-mapper
 
+# ? OPTIONAL: log level
+# * DEFAULT: info
+# * OPTIONS: debug, info, warn, error
+log-level: info
+
+# ! REQUIRED: list of storage provider to use. At least one is required.
+# * OPTIONS: git, (TODO: AWS, GCP, AZURE)
 storage:
   git:
     pull: true # OPTIONAL: [default: false] should git repository be pulled before any operation
@@ -29,51 +37,6 @@ storage:
       - private-key: /path/to/private/key
         passphrase: PASSPHRASE
 
-# REQUIRED: list of items to save in configuration repository
+# ! REQUIRED: list of paths
 items:
-  - name: .zshrc # OPTIONAL: [default: name of last path segment in "(universal|darwin|windows|linux).local" key]
-    # REQUIRED (if any of "darwin|windows|linux" keys aren't set): universal location for all operating systems
-    universal:
-      # REQUIRED: path to local file
-      local: /path/to/file
-      # REQUIRED: path to remote file (absolute path where "/" is the root of the repository)
-      remote: /remote/path
-    # REQUIRED (if "universal" key is not set): location for darwin operating system
-    darwin:
-      # REQUIRED: path to local file
-      local: /path/to/file
-      # REQUIRED: path to remote file (absolute path where "/" is the root of the repository)
-      remote: /remote/path
-    # REQUIRED (if "universal" key is not set): location for windows operating system
-    windows:
-      # REQUIRED: path to local file
-      local: /path/to/file
-      # REQUIRED: path to remote file (absolute path where "/" is the root of the repository)
-      remote: /remote/path
-    # REQUIRED (if "universal" key is not set): location for linux operating system
-    linux:
-      # REQUIRED: path to local file
-      local: /path/to/file
-      # REQUIRED: path to remote file (absolute path where "/" is the root of the repository)
-      remote: /remote/path
-
-package-managers:
-  # available: brew, pip (pip check also for pip3), cargo, apt, npm, go
-  installation-order:
-    - brew
-  brew:
-    - bat
-    - hexyl
-    - fd
-    - hyperfine
-    - diskus
-    - jq
-    - k9s
-    - go
-    - starship
-    - exa
-    - httpie
-    - neovim
-    - nmap
-    - pinentry
-    - zsh
+  - $HOME/.config/nvim

@@ -1,10 +1,4 @@
-set dotenv-load
-set shell := ["zsh", "-uc"]
-
 latest-tag := `git describe --tags --abbrev=0`
-
-default:
-  @just --list
 
 publish version: (bump-files-version version)
   git-chglog --next-tag {{version}} --output CHANGELOG.md
