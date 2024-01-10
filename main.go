@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/actions"
 	cmConfig "gitea.antoine-langlois.net/datahearth/config-mapper/internal/config"
 	cmLog "gitea.antoine-langlois.net/datahearth/config-mapper/internal/logger"
 	"github.com/urfave/cli/v2"
@@ -23,28 +24,60 @@ with a single configuration file.`,
 	Suggest:              true,
 	EnableBashCompletion: true,
 	Flags:                []cli.Flag{},
-	Before: func(ctx *cli.Context) error {
-		var err error
-		config, err = cmConfig.Load(logger)
-		if err != nil {
-			return err
-		}
+	Commands: []*cli.Command{
+		{
+			Name:        "setup",
+			Description: "Setup the configuration file",
+			Action: func(ctx *cli.Context) error {
+				if err := actions.Setup(); err != nil {
+					return err
+				}
 
-		if config.LogLevel != "" {
-			logger.Lvl = cmLog.LevelFromString(config.LogLevel)
-		}
+				logger.Info("Configuration file created at: %s", cmConfig.ConfigPath)
 
-		return nil
+				return nil
+			},
+		},
+		{
+			Name:        "save",
+			Aliases:     []string{"s"},
+			Description: "Save the current configuration",
+			Before:      beforeLoadConfig,
+			Action: func(ctx *cli.Context) error {
+				return nil
+			},
+		},
+		{
+			Name:        "load",
+			Aliases:     []string{"l"},
+			Description: "Load the onto your configuration",
+			Before:      beforeLoadConfig,
+			Action: func(ctx *cli.Context) error {
+				return nil
+			},
+		},
 	},
-	Commands: []*cli.Command{},
 }
 var (
-	logger = cmLog.New(cmLog.Info)
-	config *cmConfig.Definition
+	logger                      = cmLog.New(cmLog.Info)
+	config *cmConfig.Definition = new(cmConfig.Definition)
 )
 
 func main() {
 	if err := app.Run(os.Args); err != nil {
 		logger.Error(err.Error())
 	}
+}
+
+func beforeLoadConfig(ctx *cli.Context) error {
+	// * Skip loading configuration when configuration
+	if err := config.Load(logger); err != nil {
+		return err
+	}
+
+	if config.LogLevel != "" {
+		logger.Lvl = cmLog.LevelFromString(config.LogLevel)
+	}
+
+	return nil
 }

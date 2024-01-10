@@ -9,15 +9,42 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Definition struct {
-	UUID     uuid.UUID `yaml:"uuid"`
-	Path     string    `yaml:"path,omitempty"`
-	LogLevel string    `yaml:"log-level,omitempty"`
-	Storage  Storage   `yaml:"storage"`
-	Items    []string  `yaml:"items"`
+const ConfigPath = "$HOME/.config/config-mapper.yml"
+
+type UUIDv4 struct {
+	uuid.UUID
 }
 
-func Load(logger *cmLog.Logger) (*Definition, error) {
+func (u *UUIDv4) UnmarshalYAML(v *yaml.Node) error {
+	var uuidStr string
+	if err := v.Decode(&uuidStr); err != nil {
+		return err
+	}
+
+	uuid, err := uuid.Parse(uuidStr)
+	if err != nil {
+		return err
+	}
+
+	u.UUID = uuid
+
+	return nil
+}
+
+type Definition struct {
+	// unique system identifier
+	UUID UUIDv4 `yaml:"uuid"`
+	// directory location where the configuration is stored
+	Path string `yaml:"path,omitempty"`
+	// override log level
+	LogLevel string `yaml:"log-level,omitempty"`
+	// storage providers configuration
+	Storage Storage `yaml:"storage"`
+	// registered items
+	Items []string `yaml:"items"`
+}
+
+func (d *Definition) Load(logger *cmLog.Logger) error {
 	env := "$HOME/.config/config-mapper.yml"
 	if v := os.Getenv("CFG_MAPPER_CONFIG_PATH"); v != "" {
 		env = v
@@ -26,19 +53,27 @@ func Load(logger *cmLog.Logger) (*Definition, error) {
 	logger.Debug("Loading config from %s", env)
 	f, err := os.Open(env)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer f.Close()
 
-	cfg := Definition{}
-	d, err := io.ReadAll(f)
+	data, err := io.ReadAll(f)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if err := yaml.Unmarshal(d, &cfg); err != nil {
-		return nil, err
+	if err := yaml.Unmarshal(data, d); err != nil {
+		return err
 	}
 
-	return &cfg, nil
+	return nil
+}
+
+func (d *Definition) Write() error {
+	b, err := yaml.Marshal(d)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(os.ExpandEnv(ConfigPath), b, 0644)
 }

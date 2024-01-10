@@ -8,7 +8,7 @@ import (
 // ClassicLogFormat is the format used to print user logs.
 //
 // Format: "LEVEL MESSAGE"
-const ClassicLogFormat = "%s %s"
+const ClassicLogFormat = "%s %s\n"
 
 type Level uint8
 
@@ -90,6 +90,6 @@ func (l Logger) Debug(msg string, args ...interface{}) {
 
 func (l Logger) log(level Level, msg string, args ...interface{}) {
 	if l.Lvl >= level {
-		fmt.Printf(ClassicLogFormat, l.Lvl, fmt.Sprintf(msg, args...))
+		fmt.Printf(ClassicLogFormat, level, fmt.Sprintf(msg, args...))
 	}
 }
