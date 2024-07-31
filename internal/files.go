@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"runtime"
 
 	"github.com/pterm/pterm"
 )
@@ -16,30 +15,19 @@ var (
 )
 
 func LoadFiles(files []ItemLocation, location string) error {
+	pterm.DefaultSection.Println("Save files into saved location")
 	haveErr := false
-	p, _ := pterm.DefaultProgressbar.WithTotal(len(files)).WithTitle("Loading files onto your system").Start()
+	p, _ := pterm.DefaultProgressbar.WithTotal(len(files)).Start()
 
 	for _, f := range files {
-		var src, dst string
-		var err error
-
-		switch runtime.GOOS {
-		case "linux":
-			src, dst, err = getPaths(f.Linux, location)
-			if err != nil {
-				pterm.Error.Println(fmt.Sprintf("failed to destination resolve path \"%s\": %v", f.Linux, err))
-				haveErr = true
-				continue
+		src, dst, err := configPaths(f, location)
+		if err != nil {
+			if err == ErrUnsupportedOS {
+				return err
 			}
-		case "darwin":
-			src, dst, err = getPaths(f.Darwin, location)
-			if err != nil {
-				pterm.Error.Println(fmt.Sprintf("failed to destination resolve path \"%s\": %v", f.Darwin, err))
-				haveErr = true
-				continue
-			}
-		default:
-			return ErrUnsupportedOS
+			pterm.Error.Println(fmt.Sprintf("failed to destination resolve path \"%s\": %v", f.Linux, err))
+			haveErr = true
+			continue
 		}
 
 		if err := os.MkdirAll(path.Dir(dst), 0755); err != nil {
@@ -57,6 +45,7 @@ func LoadFiles(files []ItemLocation, location string) error {
 		}
 
 		pterm.Success.Println(fmt.Sprintf("%s copied", src))
+		p.Increment()
 	}
 
 	p.Stop()
@@ -73,7 +62,7 @@ func SaveFiles(files []ItemLocation, location string) error {
 	p, _ := pterm.DefaultProgressbar.WithTotal(len(files)).Start()
 
 	for _, f := range files {
-		src, dst, err := configPaths(f, location)
+		dst, src, err := configPaths(f, location)
 		if err != nil {
 			if err == ErrUnsupportedOS {
 				return err
