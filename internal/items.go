@@ -128,7 +128,7 @@ func (e *Items) CleanUp(removedLines []string) error {
 			return err
 		}
 
-		if err := os.Remove(path); err != nil {
+		if err := os.RemoveAll(path); err != nil {
 			return fmt.Errorf("failed to remove item %s: %v", l, err)
 		}
 	}
