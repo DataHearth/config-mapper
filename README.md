@@ -80,7 +80,7 @@ config-mapper save
 
 All defined files and folders will be copied inside your repository.
 
-If you want to exclude one part of your configuration file (files, folders), you can use these flags to ignore them `--disable-files` `--disable-folders`. Note, package managers are disable by default. You can enable this option using the `--pkgs` flag.
+If you want to exclude one part of your configuration file (files, folders), you can use these flags to ignore them `--disable-files` `--disable-folders`.
 
 You can also exclude files and folders from a given directory with a `.gitignore` like file named `.ignore`. Put it in the root directory of an included folder and add relative path to exclude (does not support glob for now). E.g:
 
@@ -106,8 +106,6 @@ foo/bar
 egg
 ```
 
-If `homebrew` is provided in the `installation-order` (default: `["apt", "homebrew"]`), it will override the `homebrew` field with all user installed packages (`brew leaves --installed-on-request`). The same principle will be implemented with `Advanced Package Tool`.
-
 template for your configuration:
 
 ```yaml
@@ -122,8 +120,9 @@ folders:
     linux: "$LOCATION/macos/.config:~/.config"
 
 package-managers:
-  installation-order: ["homebrew"]
-  homebrew:
+  installation-order:
+    - brew
+  brew:
     - bat
     - hexyl
     - fd
@@ -141,6 +140,10 @@ package-managers:
     - zsh
 
   apt-get: []
+  pip: []
+  cargo: []
+  pip: []
+  go: []
 ```
 
 ### Load your configuration onto the system

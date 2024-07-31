@@ -37,6 +37,10 @@ type Ssh struct {
 
 type PkgManagers struct {
 	InstallationOrder []string `mapstructure:"installation-order" yaml:"installation-order"`
-	Homebrew          []string `mapstructure:"homebrew" yaml:"homebrew"`
-	Aptitude          []string `mapstructure:"apt-get" yaml:"apt-get"`
+	Brew              []string `mapstructure:"brew" yaml:"brew"`
+	Apt               []string `mapstructure:"apt" yaml:"apt"`
+	Cargo             []string `mapstructure:"cargo" yaml:"cargo"`
+	Pip               []string `mapstructure:"pip" yaml:"pip"`
+	Npm               []string `mapstructure:"npm" yaml:"npm"`
+	Go                []string `mapstructure:"go" yaml:"go"`
 }
