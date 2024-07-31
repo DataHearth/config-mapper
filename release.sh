@@ -1,5 +1,7 @@
 #!/bin/bash
 
+VERSION=v0.3.0
+
 log() {
     NTR=$'\033[0m'    # * Neutral
     INF=$'\033[0;34m' # * Blue (info)
@@ -26,26 +28,32 @@ log() {
 }
 
 log "INFO" "checking required dependencies to create release"
-if type git 1> /dev/null; then
+if ! type git 1> /dev/null; then
   log "ERROR" "\"git\" binary not available"
+  exit 1
 fi
-if type sd 1> /dev/null; then
+if ! type sd 1> /dev/null; then
   log "ERROR" "\"sd\" binary not available"
+  exit 1
 fi
-if type gh 1> /dev/null; then
+if ! type gh 1> /dev/null; then
   log "ERROR" "\"gh\" binary not available"
+  exit 1
 fi
-if type go 1> /dev/null; then
+if ! type go 1> /dev/null; then
   log "ERROR" "\"go\" binary not available"
+  exit 1
 fi
-if type git-chglog 1> /dev/null; then
+if ! type git-chglog 1> /dev/null; then
   log "ERROR" "\"git-chglog\" binary not available"
+  exit 1
 fi
 
 read -p "Enter a release version (vX.Y.Z): " release
 
 log "INFO" "updating release version in files"
-sd 'Version: "v0.3.0"' "Version: \"$release\"" cmd/cli.go
+sd "Version: \"$VERSION\"" "Version: \"$release\"" cmd/cli.go
+sd "VERSION=$VERSION" "VERSION=$release" release.sh
 
 log "INFO" "updating changelog"
 git-chglog --next-tag $release --output CHANGELOG.md
@@ -64,4 +72,4 @@ log "INFO" "building Darwin binary"
 GOOS=darwin go build -o build/x86-x64_darwin_config-mapper
 
 log "INFO" "creating release"
-gh release create $release -n $(git-chglog -t .chglog/RELEASE_CHANGELOG.tpl.md) build/x86-x64_
+gh release create $release -n $(git-chglog -t .chglog/RELEASE_CHANGELOG.tpl.md) build/x86-x64_*
