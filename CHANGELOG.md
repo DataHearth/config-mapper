@@ -3,6 +3,17 @@
 ## [Unreleased]
 
 
+<a name="v0.4.0"></a>
+## [v0.4.0] - 2022-06-16
+### Bug Fixes
+- **config:** don't throw error when file not available on OS
+- **save:** remove folder before copy (avoid unwanted files)
+
+### Features
+- **cli:** add verbose flag and a spinner for pkgs
+- **config:** add SSH capability with user/pass or key/pass
+
+
 <a name="v0.3.0"></a>
 ## [v0.3.0] - 2022-06-01
 ### Features
@@ -60,6 +71,7 @@
 - **config:** add yaml tags for yaml.v3
 
 
-[Unreleased]: https://github.com/DataHearth/config-mapper/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/DataHearth/config-mapper/compare/v0.4.0...HEAD
+[v0.4.0]: https://github.com/DataHearth/config-mapper/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/DataHearth/config-mapper/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/DataHearth/config-mapper/compare/v0.1.0...v0.2.0
