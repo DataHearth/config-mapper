@@ -57,20 +57,20 @@ func init() {
 
 	loadCmd.PersistentFlags().Bool("disable-files", false, "files will be ignored")
 	loadCmd.PersistentFlags().Bool("disable-folders", false, "folders will be ignored")
-	loadCmd.PersistentFlags().Bool("disable-pkgs", false, "package managers will be ignored")
+	loadCmd.PersistentFlags().Bool("pkgs", false, "packages will be installed")
 	viper.BindPFlag("load-disable-files", loadCmd.PersistentFlags().Lookup("disable-files"))
 	viper.BindPFlag("load-disable-folders", loadCmd.PersistentFlags().Lookup("disable-folders"))
-	viper.BindPFlag("load-disable-pkgs", loadCmd.PersistentFlags().Lookup("disable-pkgs"))
+	viper.BindPFlag("load-enable-pkgs", loadCmd.PersistentFlags().Lookup("pkgs"))
 
 	saveCmd.PersistentFlags().Bool("disable-files", false, "files will be ignored")
 	saveCmd.PersistentFlags().Bool("disable-folders", false, "folders will be ignored")
-	saveCmd.PersistentFlags().Bool("disable-pkgs", false, "package managers will be ignored")
+	saveCmd.PersistentFlags().Bool("pkgs", false, "packages will be saved")
 	saveCmd.Flags().BoolP("push", "p", false, "new configurations will be committed and pushed")
 	saveCmd.Flags().StringP("message", "m", strconv.FormatInt(time.Now().Unix(), 10), "combined with --push to set a commit message")
 	saveCmd.Flags().Bool("disable-index", false, "configuration index will not be updated")
 	viper.BindPFlag("save-disable-files", saveCmd.PersistentFlags().Lookup("disable-files"))
 	viper.BindPFlag("save-disable-folders", saveCmd.PersistentFlags().Lookup("disable-folders"))
-	viper.BindPFlag("save-disable-pkgs", saveCmd.PersistentFlags().Lookup("disable-pkgs"))
+	viper.BindPFlag("save-enable-pkgs", saveCmd.PersistentFlags().Lookup("pkgs"))
 	viper.BindPFlag("push", saveCmd.Flags().Lookup("push"))
 	viper.BindPFlag("disable-index-update", saveCmd.Flags().Lookup("disable-index"))
 	viper.BindPFlag("message", saveCmd.Flags().Lookup("message"))
@@ -113,7 +113,7 @@ func save(cmd *cobra.Command, args []string) {
 
 	el.Action("save")
 
-	if !viper.GetBool("save-disable-pkgs") {
+	if viper.GetBool("save-enable-pkgs") {
 		if err := mapper.SavePkgs(c); err != nil {
 			mapper.PrintError(err.Error())
 			os.Exit(1)
@@ -167,7 +167,7 @@ func load(cmd *cobra.Command, args []string) {
 
 	el.Action("load")
 
-	if !viper.GetBool("load-disable-pkgs") {
+	if viper.GetBool("load-enable-pkgs") {
 		if err := mapper.LoadPkgs(c.PackageManagers); err != nil {
 			mapper.PrintError(err.Error())
 			os.Exit(1)
