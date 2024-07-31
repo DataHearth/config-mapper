@@ -10,13 +10,13 @@ import (
 )
 
 type Configuration struct {
-	Storage         Storage        `mapstructure:"storage" yaml:"storage"`
-	Files           []ItemLocation `mapstructure:"files" yaml:"files"`
-	Folders         []ItemLocation `mapstructure:"folders" yaml:"folders"`
-	PackageManagers PkgManagers    `mapstructure:"package-managers" yaml:"package-managers"`
+	Storage         Storage      `mapstructure:"storage" yaml:"storage"`
+	Files           []OSLocation `mapstructure:"files" yaml:"files"`
+	Folders         []OSLocation `mapstructure:"folders" yaml:"folders"`
+	PackageManagers PkgManagers  `mapstructure:"package-managers" yaml:"package-managers"`
 }
 
-type ItemLocation struct {
+type OSLocation struct {
 	Darwin string `mapstructure:"darwin" yaml:"darwin"`
 	Linux  string `mapstructure:"linux" yaml:"linux"`
 }

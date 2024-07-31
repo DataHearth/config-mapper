@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
@@ -43,6 +44,10 @@ func absolutePath(p string) (string, error) {
 
 func getPaths(p string, l string) (string, string, error) {
 	paths := strings.Split(p, ":")
+
+	if len(paths) < 2 {
+		return "", "", errors.New("path incorrectly formatted. It requires \"source:destination\"")
+	}
 
 	src, err := absolutePath(strings.Replace(paths[0], "$LOCATION", l, 1))
 	if err != nil {
@@ -86,18 +91,18 @@ func copyFile(src, dst string) error {
 	return nil
 }
 
-func configPaths(f ItemLocation, location string) (string, string, error) {
+func configPaths(os OSLocation, location string) (string, string, error) {
 	var src, dst string
 	var err error
 
 	switch runtime.GOOS {
 	case "linux":
-		src, dst, err = getPaths(f.Linux, location)
+		src, dst, err = getPaths(os.Linux, location)
 		if err != nil {
 			return "", "", err
 		}
 	case "darwin":
-		src, dst, err = getPaths(f.Darwin, location)
+		src, dst, err = getPaths(os.Darwin, location)
 		if err != nil {
 			return "", "", err
 		}
@@ -108,15 +113,40 @@ func configPaths(f ItemLocation, location string) (string, string, error) {
 	return src, dst, nil
 }
 
-func copyFolder(src, dst string) error {
+var ignored map[string]bool
+
+func copyFolder(src, dst string, checkIgnore bool) error {
 	items, err := os.ReadDir(src)
 	if err != nil {
 		return err
 	}
 
+	if checkIgnore {
+		f, err := ioutil.ReadFile(fmt.Sprintf("%s/.ignore", src))
+		if err != nil && !errors.Is(err, io.EOF) {
+			if !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+		}
+
+		ignored = map[string]bool{}
+		for _, l := range strings.Split(string(f), "\n") {
+			if l != "" && !strings.Contains(l, "#") {
+				ignored[fmt.Sprintf("%s/%s", src, l)] = true
+			}
+		}
+	}
+
 	for _, i := range items {
 		itemName := i.Name()
 		srcItem := fmt.Sprintf("%s/%s", src, itemName)
+		// do not copy item if it's present in .ignore file
+		if ignored != nil {
+			if _, ok := ignored[srcItem]; ok {
+				continue
+			}
+		}
+
 		dstItem := fmt.Sprintf("%s/%s", dst, itemName)
 
 		if i.IsDir() {
@@ -128,7 +158,7 @@ func copyFolder(src, dst string) error {
 			if err := os.MkdirAll(dstItem, info.Mode()); err != nil {
 				return err
 			}
-			if err := copyFolder(srcItem, dstItem); err != nil {
+			if err := copyFolder(srcItem, dstItem, false); err != nil {
 				return err
 			}
 
