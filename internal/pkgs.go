@@ -17,9 +17,18 @@ import (
 // InstallPackages install all packages from the configuration file by installation order
 func InstallPackages(c configuration.PkgManagers) error {
 	color.Blue("\n# Installing packages")
+	pkgManagers := map[string]bool{}
+	for _, pkgManager := range viper.GetStringSlice("exclude-pkg-managers") {
+		pkgManagers[pkgManager] = true
+	}
 
 	for _, pkgManager := range c.InstallationOrder {
 		color.Blue("## Installing %s packages", pkgManager)
+		if _, ok := pkgManagers[pkgManager]; ok {
+			color.Blue("Skipping %s packages", pkgManager)
+			fmt.Println()
+			continue
+		}
 
 		var pkgs []string
 		switch pkgManager {
@@ -35,6 +44,8 @@ func InstallPackages(c configuration.PkgManagers) error {
 			pkgs = c.Pip
 		case "go":
 			pkgs = c.Go
+		case "nala":
+			pkgs = c.Nala
 		default:
 			PrintError("package manager not supported: %s\n", pkgManager)
 			continue
@@ -64,7 +75,14 @@ func InstallPackages(c configuration.PkgManagers) error {
 			continue
 		}
 
-		cmd := exec.Command(pkgManager, "install")
+		var cmd *exec.Cmd
+		// * package managers requiring sudo permission
+		if pkgManager == "apt" || pkgManager == "nala" {
+			cmd = exec.Command("sudo", pkgManager, "install", "-y")
+		} else {
+			cmd = exec.Command(pkgManager, "install")
+		}
+
 		for _, pkg := range pkgs {
 			if strings.Contains(pkg, " ") {
 				cmd.Args = append(cmd.Args, strings.Split(pkg, " ")...)
