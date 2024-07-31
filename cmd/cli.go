@@ -122,6 +122,8 @@ var saveCmd = &cobra.Command{
 		}
 
 		if viper.GetBool("push") {
+			pterm.DefaultSection.Println("Pushing items")
+
 			s, _ := pterm.DefaultSpinner.WithShowTimer(true).WithRemoveWhenDone(false).Start("Pushing changes to remote repository")
 
 			if err := repo.PushChanges(viper.GetString("message")); err != nil {
