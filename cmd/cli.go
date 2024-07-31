@@ -7,6 +7,8 @@ import (
 	"time"
 
 	mapper "github.com/datahearth/config-mapper/internal"
+	"github.com/datahearth/config-mapper/internal/configuration"
+	"github.com/datahearth/config-mapper/internal/git"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -47,30 +49,36 @@ var saveCmd = &cobra.Command{
 }
 
 func init() {
-	cobra.OnInitialize(mapper.InitConfig)
+	cobra.OnInitialize(configuration.InitConfig)
 
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(loadCmd)
 	rootCmd.AddCommand(saveCmd)
 	rootCmd.PersistentFlags().StringP("configuration-file", "c", "", "location of configuration file")
+	rootCmd.PersistentFlags().String("ssh-user", "", "SSH username to retrieve configuration file")
+	rootCmd.PersistentFlags().String("ssh-password", "", "SSH password to retrieve configuration file")
+	rootCmd.PersistentFlags().String("ssh-key", "", "SSH key to retrieve configuration file (if a passphrase is needed, use the \"CONFIG_MAPPER_PASS\" env variable")
 	viper.BindPFlag("configuration-file", rootCmd.PersistentFlags().Lookup("configuration-file"))
+	viper.BindPFlag("ssh-user", rootCmd.PersistentFlags().Lookup("ssh-user"))
+	viper.BindPFlag("ssh-password", rootCmd.PersistentFlags().Lookup("ssh-password"))
+	viper.BindPFlag("ssh-key", rootCmd.PersistentFlags().Lookup("ssh-key"))
 
-	loadCmd.PersistentFlags().Bool("disable-files", false, "files will be ignored")
-	loadCmd.PersistentFlags().Bool("disable-folders", false, "folders will be ignored")
-	loadCmd.PersistentFlags().Bool("pkgs", false, "packages will be installed")
-	viper.BindPFlag("load-disable-files", loadCmd.PersistentFlags().Lookup("disable-files"))
-	viper.BindPFlag("load-disable-folders", loadCmd.PersistentFlags().Lookup("disable-folders"))
-	viper.BindPFlag("load-enable-pkgs", loadCmd.PersistentFlags().Lookup("pkgs"))
+	loadCmd.Flags().Bool("disable-files", false, "files will be ignored")
+	loadCmd.Flags().Bool("disable-folders", false, "folders will be ignored")
+	loadCmd.Flags().Bool("pkgs", false, "packages will be installed")
+	viper.BindPFlag("load-disable-files", loadCmd.Flags().Lookup("disable-files"))
+	viper.BindPFlag("load-disable-folders", loadCmd.Flags().Lookup("disable-folders"))
+	viper.BindPFlag("load-enable-pkgs", loadCmd.Flags().Lookup("pkgs"))
 
-	saveCmd.PersistentFlags().Bool("disable-files", false, "files will be ignored")
-	saveCmd.PersistentFlags().Bool("disable-folders", false, "folders will be ignored")
-	saveCmd.PersistentFlags().Bool("pkgs", false, "packages will be saved")
+	saveCmd.Flags().Bool("disable-files", false, "files will be ignored")
+	saveCmd.Flags().Bool("disable-folders", false, "folders will be ignored")
+	saveCmd.Flags().Bool("pkgs", false, "packages will be saved")
 	saveCmd.Flags().BoolP("push", "p", false, "new configurations will be committed and pushed")
 	saveCmd.Flags().StringP("message", "m", strconv.FormatInt(time.Now().Unix(), 10), "combined with --push to set a commit message")
 	saveCmd.Flags().Bool("disable-index", false, "configuration index will not be updated")
-	viper.BindPFlag("save-disable-files", saveCmd.PersistentFlags().Lookup("disable-files"))
-	viper.BindPFlag("save-disable-folders", saveCmd.PersistentFlags().Lookup("disable-folders"))
-	viper.BindPFlag("save-enable-pkgs", saveCmd.PersistentFlags().Lookup("pkgs"))
+	viper.BindPFlag("save-disable-files", saveCmd.Flags().Lookup("disable-files"))
+	viper.BindPFlag("save-disable-folders", saveCmd.Flags().Lookup("disable-folders"))
+	viper.BindPFlag("save-enable-pkgs", saveCmd.Flags().Lookup("pkgs"))
 	viper.BindPFlag("push", saveCmd.Flags().Lookup("push"))
 	viper.BindPFlag("disable-index-update", saveCmd.Flags().Lookup("disable-index"))
 	viper.BindPFlag("message", saveCmd.Flags().Lookup("message"))
@@ -84,7 +92,7 @@ func Execute() {
 }
 
 func save(cmd *cobra.Command, args []string) {
-	var c mapper.Configuration
+	var c configuration.Configuration
 	if err := viper.Unmarshal(&c); err != nil {
 		mapper.PrintError("failed to decode configuration: %v\n", err)
 		os.Exit(1)
@@ -96,7 +104,7 @@ func save(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	r, err := mapper.NewRepository(c.Storage.Git, c.Storage.Path)
+	r, err := git.NewRepository(c.Storage.Git, c.Storage.Path)
 	if err != nil {
 		mapper.PrintError("failed to open repository at %s: %v\n", c.Storage.Path, err)
 		os.Exit(1)
@@ -138,7 +146,7 @@ func save(cmd *cobra.Command, args []string) {
 }
 
 func load(cmd *cobra.Command, args []string) {
-	var c mapper.Configuration
+	var c configuration.Configuration
 	if err := viper.Unmarshal(&c); err != nil {
 		mapper.PrintError("failed to decode configuration: %v\n", err)
 		os.Exit(1)
@@ -150,7 +158,7 @@ func load(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	r, err := mapper.NewRepository(c.Storage.Git, c.Storage.Path)
+	r, err := git.NewRepository(c.Storage.Git, c.Storage.Path)
 	if err != nil {
 		mapper.PrintError("failed to open repository at %s: %v\n", c.Storage.Path, err)
 		os.Exit(1)
@@ -176,16 +184,15 @@ func load(cmd *cobra.Command, args []string) {
 }
 
 func initCommand(cmd *cobra.Command, args []string) {
-	var config mapper.Configuration
-
-	if err := viper.Unmarshal(&config); err != nil {
+	var c configuration.Configuration
+	if err := viper.Unmarshal(&c); err != nil {
 		mapper.PrintError("failed to decode configuration: %v\n", err)
 		os.Exit(1)
 	}
 
 	logger.Println("initializing config-mapper folder from configuration...")
 
-	if _, err := mapper.NewRepository(config.Storage.Git, config.Storage.Path); err != nil {
+	if _, err := git.NewRepository(c.Storage.Git, c.Storage.Path); err != nil {
 		mapper.PrintError("failed to initialize folder: %v\n", err)
 		os.Exit(1)
 	}

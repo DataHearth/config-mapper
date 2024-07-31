@@ -1,4 +1,4 @@
-package mapper
+package git
 
 import (
 	"errors"
@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/datahearth/config-mapper/internal/configuration"
+	"github.com/datahearth/config-mapper/internal/misc"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -14,8 +16,7 @@ import (
 )
 
 var (
-	ErrDirIsFile  = errors.New("path is a file")
-	ErrInvalidEnv = errors.New("found invalid environment variable in path")
+	ErrDirIsFile = errors.New("path is a file")
 )
 
 type RepositoryActions interface {
@@ -38,18 +39,18 @@ type author struct {
 	email string
 }
 
-func NewRepository(config Git, repoPath string) (RepositoryActions, error) {
+func NewRepository(config configuration.Git, repoPath string) (RepositoryActions, error) {
 	var auth transport.AuthMethod
 	if config.URL == "" {
 		return nil, errors.New("a repository URI is needed (either using GIT protocol or HTTPS)")
 	}
-	repoPath, err := absolutePath(repoPath)
+	repoPath, err := misc.AbsolutePath(repoPath)
 	if err != nil {
 		return nil, err
 	}
 
 	if config.SSH.Passphrase != "" && config.SSH.PrivateKey != "" {
-		privateKey, err := absolutePath(config.SSH.PrivateKey)
+		privateKey, err := misc.AbsolutePath(config.SSH.PrivateKey)
 		if err != nil {
 			return nil, err
 		}

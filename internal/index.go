@@ -5,6 +5,8 @@ import (
 	"io/fs"
 	"os"
 	"strings"
+
+	"github.com/datahearth/config-mapper/internal/misc"
 )
 
 type Index struct {
@@ -24,7 +26,7 @@ type Indexer interface {
 
 func NewIndexer(repoPath string) (Indexer, error) {
 	perms := fs.FileMode(0755)
-	indexPath, err := absolutePath(fmt.Sprintf("%s/.index", repoPath))
+	indexPath, err := misc.AbsolutePath(fmt.Sprintf("%s/.index", repoPath))
 	if err != nil {
 		return nil, err
 	}

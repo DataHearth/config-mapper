@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/datahearth/config-mapper/internal/configuration"
 	"github.com/fatih/color"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -21,7 +22,7 @@ var (
 	ErrAptNotAvailable    = errors.New("aptitude is not available on your system")
 )
 
-func LoadPkgs(c PkgManagers) error {
+func LoadPkgs(c configuration.PkgManagers) error {
 	color.Blue("# Load folders into saved location")
 
 	for _, pkg := range c.InstallationOrder {
@@ -42,7 +43,7 @@ func LoadPkgs(c PkgManagers) error {
 	return nil
 }
 
-func SavePkgs(cfg Configuration) error {
+func SavePkgs(cfg configuration.Configuration) error {
 	color.Blue("# Save user installed packages")
 
 	for _, pkg := range cfg.PackageManagers.InstallationOrder {
@@ -60,7 +61,7 @@ func SavePkgs(cfg Configuration) error {
 	return nil
 }
 
-func SaveBrewPkgs(cfg Configuration) error {
+func SaveBrewPkgs(cfg configuration.Configuration) error {
 	if _, err := exec.LookPath("brew"); err != nil {
 		return err
 	}
