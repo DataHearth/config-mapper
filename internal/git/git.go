@@ -3,7 +3,6 @@ package git
 import (
 	"errors"
 	"os"
-	"os/exec"
 	"time"
 
 	"github.com/datahearth/config-mapper/internal/configuration"
@@ -139,11 +138,16 @@ func (r *Repository) PushChanges(msg string, newLines, removedLines []string) er
 		return err
 	}
 
-	// TODO: investigated why w.AddWithOptions doesn't add removed files and sometimes .index
-	cmd := exec.Command("git", "add", ".")
-	cmd.Dir = r.repoPath
-	if err := cmd.Run(); err != nil {
+	status, err := w.Status()
+	if err != nil {
 		return err
+	}
+
+	for file := range status {
+		_, err = w.Add(file)
+		if err != nil {
+			return err
+		}
 	}
 
 	if _, err := w.Commit(msg, &git.CommitOptions{
