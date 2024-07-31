@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/configuration"
+	"github.com/charmbracelet/log"
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
 	"github.com/spf13/viper"
@@ -20,12 +21,10 @@ func InstallPackages(c configuration.PkgManagers) error {
 		pkgManagers[pkgManager] = true
 	}
 
-	fmt.Println()
 	for _, pkgManager := range c.InstallationOrder {
-		fmt.Printf("# Installing %s packages\n", pkgManager)
+		log.Info("installing packages", "package-manager", pkgManager)
 		if _, ok := pkgManagers[pkgManager]; ok {
-			fmt.Printf("⛔ Skipping %s packages\n", pkgManager)
-			fmt.Println()
+			log.Info("skipping package manager", "package-manager", pkgManager)
 			continue
 		}
 
@@ -46,7 +45,7 @@ func InstallPackages(c configuration.PkgManagers) error {
 		case "nala":
 			pkgs = c.Nala
 		default:
-			PrintError("package manager not supported: %s\n", pkgManager)
+			log.Error("package manager not supported", "package-manager", pkgManager)
 			continue
 		}
 
@@ -54,18 +53,18 @@ func InstallPackages(c configuration.PkgManagers) error {
 			// * pip might not be available on the system but pip3 is
 			if pkgManager == "pip" {
 				if _, err := exec.LookPath("pip3"); err != nil {
-					PrintError("%s and pip3 are not available on your system\n", pkgManager)
+					log.Error("pip and pip3 are not available on your system", "package-manager", pkgManager)
 					continue
 				}
 				pkgManager = "pip3"
 			} else {
-				PrintError("%s is not available on your system\n", pkgManager)
+				log.Error("package manager not available on your system", "package-manager", pkgManager)
 				continue
 			}
 		}
 		// * for some reason, apt binary is available on darwin. Exclude it to avoid errors
 		if pkgManager == "apt" && runtime.GOOS == "darwin" {
-			PrintError("%s is not available on your system\n", pkgManager)
+			log.Error("package manager not available on your system", "package-manager", pkgManager)
 			continue
 		}
 
@@ -92,7 +91,7 @@ func InstallPackages(c configuration.PkgManagers) error {
 			}
 			if err := cmd.Run(); err != nil {
 				if v {
-					PrintError(err.Error())
+					log.Error(err)
 				} else {
 					msg := fmt.Sprintf(" %s", cmd.Args)
 					if i == len(commands)-1 {

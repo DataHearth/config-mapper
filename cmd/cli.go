@@ -1,22 +1,15 @@
 package cmd
 
 import (
-	"log"
-	"os"
 	"strconv"
 	"time"
 
 	mapper "gitea.antoine-langlois.net/datahearth/config-mapper/internal"
 	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/configuration"
 	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/git"
-	"github.com/fatih/color"
+	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-)
-
-var (
-	errLogger = log.New(os.Stderr, "", 0)
-	logger    = log.New(os.Stderr, "", 0)
 )
 
 var rootCmd = &cobra.Command{
@@ -47,6 +40,14 @@ var saveCmd = &cobra.Command{
 		 saved location based on your configuration file`,
 	Run: save,
 }
+var installCmd = &cobra.Command{
+	Use:   "install",
+	Short: "install additional tools",
+	Long:  `install additional tools like package managers, programming languages, etc.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Fatal("install command not implemented yet")
+	},
+}
 
 func init() {
 	cobra.OnInitialize(configuration.InitConfig)
@@ -54,6 +55,7 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(loadCmd)
 	rootCmd.AddCommand(saveCmd)
+	rootCmd.AddCommand(installCmd)
 
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "STDOUT will be more verbose")
 	rootCmd.PersistentFlags().StringP("configuration-file", "c", "", "location of configuration file")
@@ -89,28 +91,24 @@ func init() {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		errLogger.Printf("an error occured while running command: %v\n", err)
-		os.Exit(1)
+		log.Fatal("an error occured while running command", "err", err)
 	}
 }
 
 func save(cmd *cobra.Command, args []string) {
 	var c configuration.Configuration
 	if err := viper.Unmarshal(&c); err != nil {
-		mapper.PrintError("failed to decode configuration: %v\n", err)
-		os.Exit(1)
+		log.Fatal("failed to decode configuration", "err", err)
 	}
 
 	indexer, err := mapper.NewIndexer(c.Storage.Path)
 	if err != nil {
-		mapper.PrintError("failed to open the indexer: %v\n", err)
-		os.Exit(1)
+		log.Fatal("failed to open the indexer", "err", err)
 	}
 
 	r, err := git.NewRepository(c.Storage.Git, c.Storage.Path)
 	if err != nil {
-		mapper.PrintError("failed to open repository at %s: %v\n", c.Storage.Path, err)
-		os.Exit(1)
+		log.Fatal("failed to open repository", "path", c.Storage.Path, "err", err)
 	}
 
 	el := mapper.NewItemsActions(nil, c.Storage.Path, r, indexer)
@@ -125,39 +123,32 @@ func save(cmd *cobra.Command, args []string) {
 	el.Action("save")
 
 	if err := el.CleanUp(indexer.RemovedLines()); err != nil {
-		mapper.PrintError("failed to clean repository: %v\n", err)
-		os.Exit(1)
+		log.Fatal("failed to clean repository", "err", err)
 	}
 
 	if viper.GetBool("push") {
-		color.Blue("# Pushing items")
+		log.Info("pushing changes...")
 
 		if err := r.PushChanges(viper.GetString("message"), indexer.Lines(), indexer.RemovedLines()); err != nil {
-			mapper.PrintError("failed to push changes to repository: %v\n", err)
-			os.Exit(1)
+			log.Fatal("failed to push changes to repository", "err", err)
 		}
-
-		color.Green("Items pushed")
 	}
 }
 
 func load(cmd *cobra.Command, args []string) {
 	var c configuration.Configuration
 	if err := viper.Unmarshal(&c); err != nil {
-		mapper.PrintError("failed to decode configuration: %v\n", err)
-		os.Exit(1)
+		log.Fatal("failed to decode configuration", "err", err)
 	}
 
 	i, err := mapper.NewIndexer(c.Storage.Path)
 	if err != nil {
-		mapper.PrintError("failed to open the indexer: %v\n", err)
-		os.Exit(1)
+		log.Fatal("failed to open the indexer", "err", err)
 	}
 
 	r, err := git.NewRepository(c.Storage.Git, c.Storage.Path)
 	if err != nil {
-		mapper.PrintError("failed to open repository at %s: %v\n", c.Storage.Path, err)
-		os.Exit(1)
+		log.Fatal("failed to open repository", "path", c.Storage.Path, "err", err)
 	}
 
 	el := mapper.NewItemsActions(nil, c.Storage.Path, r, i)
@@ -173,8 +164,7 @@ func load(cmd *cobra.Command, args []string) {
 
 	if viper.GetBool("load-enable-pkgs") {
 		if err := mapper.InstallPackages(c.PackageManagers); err != nil {
-			mapper.PrintError(err.Error())
-			os.Exit(1)
+			log.Fatal(err)
 		}
 	}
 }
@@ -182,16 +172,14 @@ func load(cmd *cobra.Command, args []string) {
 func initCommand(cmd *cobra.Command, args []string) {
 	var c configuration.Configuration
 	if err := viper.Unmarshal(&c); err != nil {
-		mapper.PrintError("failed to decode configuration: %v\n", err)
-		os.Exit(1)
+		log.Fatal("failed to decode configuration", "err", err)
 	}
 
-	logger.Println("initializing config-mapper folder from configuration...")
+	log.Info("initializing config-mapper folder from configuration...")
 
 	if _, err := git.NewRepository(c.Storage.Git, c.Storage.Path); err != nil {
-		mapper.PrintError("failed to initialize folder: %v\n", err)
-		os.Exit(1)
+		log.Fatal("failed to initialize folder", "err", err)
 	}
 
-	logger.Printf("repository initialized at \"%v\"\n", viper.GetString("storage.location"))
+	log.Info("repository initialized", "path", viper.GetString("storage.location"))
 }
