@@ -13,7 +13,8 @@ folders:
   - "~/.ssh"
 
 package-managers:
-  installation-order: ["homebrew"]
+  # [DEFAULT: apt, homebrew]
+  installation-order: ["apt", "homebrew"]
   homebrew:
     - bat
     # - hexyl
