@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/datahearth/config-mapper/internal/misc"
+	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/misc"
 )
 
 type Index struct {

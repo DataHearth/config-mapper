@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/datahearth/config-mapper/internal/configuration"
+	"gitea.antoine-langlois.net/datahearth/config-mapper/internal/configuration"
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
 	"github.com/spf13/viper"
