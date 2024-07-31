@@ -9,11 +9,13 @@ type Configuration struct {
 
 type Storage struct {
 	Location string `yaml:"location"`
-	Git      struct {
-		Username   string `yaml:"username"`
-		Password   string `yaml:"password"`
-		Repository string `yaml:"repository"`
-	} `yaml:"git"`
+	Git      Git    `yaml:"git"`
+}
+
+type Git struct {
+	Username   string `yaml:"username"`
+	Password   string `yaml:"password"`
+	Repository string `yaml:"repository"`
 }
 
 type PkgManagers struct {
