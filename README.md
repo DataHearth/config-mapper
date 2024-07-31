@@ -1,7 +1,7 @@
 # config-mapper
 
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://gitea.antoine-langlois.net/DataHearth/config-mapper/src/branch/main/LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.6.1-blue)](https://gitea.antoine-langlois.net/DataHearth/config-mapper/tags)
+[![Version](https://img.shields.io/badge/version-v0.6.2-blue)](https://gitea.antoine-langlois.net/DataHearth/config-mapper/tags)
 
 `config-mapper` is CLI utility tool to help you manage your configuration between UNIX systems.  
 It provides a set of tools to load your configuration from a system, save it into a git repository and then save it to a new system. This configuration can be a set of files, folders or even dependencies.
