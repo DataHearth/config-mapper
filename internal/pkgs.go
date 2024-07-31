@@ -102,6 +102,7 @@ func installBrewPkgs(pkgs []string) error {
 	cmd.Args = append(cmd.Args, pkgs...)
 	color.Blue("## Installing Homebrew packages")
 
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		PrintError("brew command failed: %v", err)
 		return err
