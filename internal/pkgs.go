@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/datahearth/config-mapper/internal/configuration"
-	"github.com/fatih/color"
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
 	"github.com/spf13/viper"
@@ -16,16 +15,16 @@ import (
 
 // InstallPackages install all packages from the configuration file by installation order
 func InstallPackages(c configuration.PkgManagers) error {
-	color.Blue("\n# Installing packages")
 	pkgManagers := map[string]bool{}
 	for _, pkgManager := range viper.GetStringSlice("exclude-pkg-managers") {
 		pkgManagers[pkgManager] = true
 	}
 
+	fmt.Println()
 	for _, pkgManager := range c.InstallationOrder {
-		color.Blue("## Installing %s packages", pkgManager)
+		fmt.Printf("# Installing %s packages\n", pkgManager)
 		if _, ok := pkgManagers[pkgManager]; ok {
-			color.Blue("Skipping %s packages", pkgManager)
+			fmt.Printf("⛔ Skipping %s packages\n", pkgManager)
 			fmt.Println()
 			continue
 		}
@@ -71,50 +70,89 @@ func InstallPackages(c configuration.PkgManagers) error {
 		}
 
 		if len(pkgs) == 0 {
-			fmt.Printf("%s: nothing to do\n", pkgManager)
+			fmt.Printf("✔️ nothing to do\n\n")
 			continue
 		}
 
-		var cmd *exec.Cmd
+		v := viper.GetBool("verbose")
+		commands := []*exec.Cmd{}
 		// * package managers requiring sudo permission
 		if pkgManager == "apt" || pkgManager == "nala" {
-			cmd = exec.Command("sudo", pkgManager, "install", "-y")
+			commands = append(commands, buildDefaultCommand([]string{"sudo", pkgManager, "install", "-y"}, pkgs, v))
+		} else if pkgManager == "cargo" {
+			commands = buildCargoCommand(pkgs, v)
 		} else {
-			cmd = exec.Command(pkgManager, "install")
+			commands = append(commands, buildDefaultCommand([]string{pkgManager, "install"}, pkgs, v))
 		}
 
-		for _, pkg := range pkgs {
-			if strings.Contains(pkg, " ") {
-				cmd.Args = append(cmd.Args, strings.Split(pkg, " ")...)
-			} else {
-				cmd.Args = append(cmd.Args, pkg)
+		for i, cmd := range commands {
+			spinner := wow.New(os.Stdout, spin.Get(spin.Dots3), " Installing...")
+			if !v {
+				spinner.Start()
+			}
+			if err := cmd.Run(); err != nil {
+				if v {
+					PrintError(err.Error())
+				} else {
+					msg := fmt.Sprintf(" %s", cmd.Args)
+					if i == len(commands)-1 {
+						msg = fmt.Sprintf("%s\n", msg)
+					}
+					spinner.PersistWith(spin.Spinner{Frames: []string{"❌"}}, msg)
+				}
+				continue
+			}
+
+			if !v {
+				// msg := fmt.Sprintf(" %s %s", color.GreenString("Success\t"), cmd.Args)
+				msg := fmt.Sprintf(" %s", cmd.Args)
+				if i == len(commands)-1 {
+					msg = fmt.Sprintf("%s\n", msg)
+				}
+				spinner.PersistWith(spin.Spinner{Frames: []string{"✔️"}}, msg)
 			}
 		}
-
-		spinner := wow.New(os.Stdout, spin.Get(spin.Dots3), " Running...")
-
-		v := viper.GetBool("verbose")
-		if v {
-			cmd.Stderr = os.Stderr
-			cmd.Stdout = os.Stdout
-		} else {
-			spinner.Start()
-		}
-
-		if err := cmd.Run(); err != nil {
-			spinner.Stop()
-			PrintError("\n%s command failed: %v", pkgManager, err)
-			return err
-		}
-
-		if v {
-			// todo: find a way to clear spinner when done
-			spinner.Stop()
-			fmt.Println()
-		}
-		color.Green("%s packages intalled succesfully !", pkgManager)
-		fmt.Println()
 	}
 
 	return nil
+}
+
+func buildCargoCommand(packages []string, verbose bool) []*exec.Cmd {
+	commands := []*exec.Cmd{}
+
+	cmd := exec.Command("cargo", "install")
+	for _, pkg := range packages {
+		if strings.Contains(pkg, " ") {
+			customCmd := exec.Command("cargo", "install")
+			customCmd.Args = append(cmd.Args, strings.Split(pkg, " ")...)
+			if verbose {
+				customCmd.Stderr = os.Stderr
+				customCmd.Stdout = os.Stdout
+			}
+			commands = append(commands, customCmd)
+		} else {
+			cmd.Args = append(cmd.Args, pkg)
+		}
+	}
+
+	if verbose {
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
+	}
+	if len(cmd.Args) > 2 {
+		commands = append(commands, cmd)
+	}
+
+	return commands
+}
+
+func buildDefaultCommand(command, packages []string, verbose bool) *exec.Cmd {
+	cmd := exec.Command(command[0], command[1:]...)
+	cmd.Args = append(cmd.Args, packages...)
+	if verbose {
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
+	}
+
+	return cmd
 }
