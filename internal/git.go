@@ -3,6 +3,7 @@ package mapper
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -137,29 +138,20 @@ func (r *Repository) PushChanges(msg string, newLines, removedLines []string) er
 		return err
 	}
 
-	for _, l := range newLines {
-		if err := w.AddWithOptions(&git.AddOptions{
-			Path: l,
-		}); err != nil {
-			return err
-		}
-	}
-	for _, l := range removedLines {
-		if err := w.AddWithOptions(&git.AddOptions{
-			Path: l,
-		}); err != nil {
-			return err
-		}
+	// TODO: investigated why w.AddWithOptions doesn't add removed files and sometimes .index
+	cmd := exec.Command("git", "add", ".")
+	cmd.Dir = r.repoPath
+	if err := cmd.Run(); err != nil {
+		return err
 	}
 
-	return nil
-	// if _, err := w.Commit(msg, &git.CommitOptions{
-	// 	Author: r.GetAuthor(),
-	// }); err != nil {
-	// 	return err
-	// }
+	if _, err := w.Commit(msg, &git.CommitOptions{
+		Author: r.GetAuthor(),
+	}); err != nil {
+		return err
+	}
 
-	// return r.repository.Push(&git.PushOptions{})
+	return r.repository.Push(&git.PushOptions{})
 }
 
 func (r *Repository) GetWorktree() (*git.Worktree, error) {
