@@ -6,7 +6,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
 )
 
@@ -82,9 +81,9 @@ func InitConfig() {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			errLogger.Println(pterm.Red(err))
+			PrintError(err.Error())
 		} else {
-			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to read config: %v\n", err)))
+			PrintError("failed to read config: %v\n", err)
 		}
 
 		os.Exit(1)

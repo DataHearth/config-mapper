@@ -1,12 +1,15 @@
 package mapper
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"runtime"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 func absolutePath(p string) (string, error) {
@@ -99,7 +102,7 @@ func configPaths(f ItemLocation, location string) (string, string, error) {
 			return "", "", err
 		}
 	default:
-		return "", "", ErrUnsupportedOS
+		return "", "", errors.New("unsupported OS. Please, contact the maintainer")
 	}
 
 	return src, dst, nil
@@ -117,12 +120,19 @@ func copyFolder(src, dst string) error {
 		dstItem := fmt.Sprintf("%s/%s", dst, itemName)
 
 		if i.IsDir() {
-			if err := os.Mkdir(dstItem, i.Type().Perm()); err != nil {
+			info, err := i.Info()
+			if err != nil {
+				return err
+			}
+
+			if err := os.MkdirAll(dstItem, info.Mode()); err != nil {
 				return err
 			}
 			if err := copyFolder(srcItem, dstItem); err != nil {
 				return err
 			}
+
+			continue
 		}
 
 		if err := copyFile(srcItem, dstItem); err != nil {
@@ -131,4 +141,8 @@ func copyFolder(src, dst string) error {
 	}
 
 	return nil
+}
+
+func PrintError(err string, values ...interface{}) {
+	color.Error.Write([]byte(fmt.Sprintf(err, values...)))
 }
