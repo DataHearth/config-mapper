@@ -9,27 +9,32 @@ import (
 )
 
 type Configuration struct {
-	Storage         Storage     `yaml:"storage"`
-	Files           []string    `yaml:"files"`
-	Folders         []string    `yaml:"folders"`
-	PackageManagers PkgManagers `yaml:"package-managers"`
+	Storage         Storage        `mapstructure:"storage"`
+	Files           []ItemLocation `mapstructure:"files"`
+	Folders         []ItemLocation `mapstructure:"folders"`
+	PackageManagers PkgManagers    `mapstructure:"package-managers"`
+}
+
+type ItemLocation struct {
+	Darwin string `mapstructure:"darwin"`
+	Linux  string `mapstructure:"linux"`
 }
 
 type Storage struct {
-	Location string `yaml:"location"`
-	Git      Git    `yaml:"git"`
+	Location string `mapstructure:"location"`
+	Git      Git    `mapstructure:"git"`
 }
 
 type Git struct {
-	Username   string `yaml:"username"`
-	Password   string `yaml:"password"`
-	Repository string `yaml:"repository"`
+	Username   string `mapstructure:"username"`
+	Password   string `mapstructure:"password"`
+	Repository string `mapstructure:"repository"`
 }
 
 type PkgManagers struct {
-	InstallationOrder []string    `yaml:"installation-order"`
-	Homebrew          []string    `yaml:"homebrew"`
-	AptGet            interface{} `yaml:"apt-get"`
+	InstallationOrder []string `mapstructure:"installation-order"`
+	Homebrew          []string `mapstructure:"homebrew"`
+	Aptitude          []string `mapstructure:"apt-get"`
 }
 
 func InitConfig() {

@@ -7,7 +7,6 @@ import (
 	"os/exec"
 
 	"github.com/pterm/pterm"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -15,17 +14,15 @@ var (
 	ErrFailedInstallation = errors.New("failed to installed some packages. Please, checkout STDERR for more information")
 )
 
-func LoadPkgs() error {
-	order := viper.GetStringSlice("package-managers.installation-order")
-
-	for _, pkg := range order {
+func LoadPkgs(c PkgManagers) error {
+	for _, pkg := range c.InstallationOrder {
 		switch pkg {
 		case "homebrew":
-			if err := installBrewPkgs(); err != nil {
+			if err := installBrewPkgs(c.Homebrew); err != nil {
 				return ErrFailedInstallation
 			}
 		case "apt":
-			if err := installAptPkgs(); err != nil {
+			if err := installAptPkgs(c.Aptitude); err != nil {
 				return ErrFailedInstallation
 			}
 		}
@@ -34,12 +31,12 @@ func LoadPkgs() error {
 	return nil
 }
 
-func installBrewPkgs() error {
+func installBrewPkgs(pkgs []string) error {
 	if _, err := exec.LookPath("brew"); err != nil {
 		errLogger.Println(pterm.Red("Homebrew is not installed on your system"))
+		return nil
 	}
 
-	pkgs := viper.GetStringSlice("package-managers.homebrew")
 	if len(pkgs) == 0 {
 		pterm.Println(pterm.Blue("homebrew: nothing to do"))
 		return nil
@@ -67,15 +64,17 @@ func installBrewPkgs() error {
 		return err
 	}
 
+	introSpinner.Success("Packages intalled succesfully")
+
 	return nil
 }
 
-func installAptPkgs() error {
+func installAptPkgs(pkgs []string) error {
 	if _, err := exec.LookPath("apt-get"); err != nil {
 		errLogger.Println(pterm.Red("aptitude is not available on your system"))
+		return nil
 	}
 
-	pkgs := viper.GetStringSlice("package-managers.apt")
 	if len(pkgs) == 0 {
 		pterm.Println(pterm.Blue("aptitude: nothing to do"))
 		return nil
@@ -103,6 +102,8 @@ func installAptPkgs() error {
 	if err != nil {
 		return err
 	}
+
+	introSpinner.Success("Packages intalled succesfully")
 
 	return nil
 }
