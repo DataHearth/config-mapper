@@ -10,42 +10,42 @@ import (
 )
 
 type Configuration struct {
-	Storage         Storage        `mapstructure:"storage"`
-	Files           []ItemLocation `mapstructure:"files"`
-	Folders         []ItemLocation `mapstructure:"folders"`
-	PackageManagers PkgManagers    `mapstructure:"package-managers"`
+	Storage         Storage        `mapstructure:"storage" yaml:"storage"`
+	Files           []ItemLocation `mapstructure:"files" yaml:"files"`
+	Folders         []ItemLocation `mapstructure:"folders" yaml:"folders"`
+	PackageManagers PkgManagers    `mapstructure:"package-managers" yaml:"package-managers"`
 }
 
 type ItemLocation struct {
-	Darwin string `mapstructure:"darwin"`
-	Linux  string `mapstructure:"linux"`
+	Darwin string `mapstructure:"darwin" yaml:"darwin"`
+	Linux  string `mapstructure:"linux" yaml:"linux"`
 }
 
 type Storage struct {
-	Location string `mapstructure:"location"`
-	Git      Git    `mapstructure:"git"`
+	Location string `mapstructure:"location" yaml:"location"`
+	Git      Git    `mapstructure:"git" yaml:"git"`
 }
 
 type Git struct {
-	SSH        Ssh       `mapstructure:"ssh"`
-	BasicAuth  BasicAuth `mapstructure:"basic-auth"`
-	Repository string    `mapstructure:"repository"`
+	SSH        Ssh       `mapstructure:"ssh" yaml:"ssh"`
+	BasicAuth  BasicAuth `mapstructure:"basic-auth" yaml:"basic-auth"`
+	Repository string    `mapstructure:"repository" yaml:"repository"`
 }
 
 type BasicAuth struct {
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Username string `mapstructure:"username" yaml:"username"`
+	Password string `mapstructure:"password" yaml:"password"`
 }
 
 type Ssh struct {
-	Passphrase string `mapstructure:"passphrase"`
-	PrivateKey string `mapstructure:"private-key"`
+	Passphrase string `mapstructure:"passphrase" yaml:"passphrase"`
+	PrivateKey string `mapstructure:"private-key" yaml:"private-key"`
 }
 
 type PkgManagers struct {
-	InstallationOrder []string `mapstructure:"installation-order"`
-	Homebrew          []string `mapstructure:"homebrew"`
-	Aptitude          []string `mapstructure:"apt-get"`
+	InstallationOrder []string `mapstructure:"installation-order" yaml:"installation-order"`
+	Homebrew          []string `mapstructure:"homebrew" yaml:"homebrew"`
+	Aptitude          []string `mapstructure:"apt-get" yaml:"apt-get"`
 }
 
 func InitConfig() {
