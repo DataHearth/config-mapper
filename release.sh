@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 VERSION=v0.5.0
 
 log() {
@@ -48,6 +50,14 @@ if ! type git-chglog 1> /dev/null; then
   log "ERROR" "\"git-chglog\" binary not available"
   exit 1
 fi
+if ! type jq 1> /dev/null; then
+  log "ERROR" "\"jq\" binary not available"
+  exit 1
+fi
+if ! type xhs 1> /dev/null; then
+  log "ERROR" "\"xhs\" binary not available"
+  exit 1
+fi
 
 read -p "Enter a release version (vX.Y.Z): " release
 
@@ -72,4 +82,8 @@ log "INFO" "building Darwin binary"
 GOOS=darwin go build -o build/x86-x64_darwin_config-mapper
 
 log "INFO" "creating release"
-git-chglog -t .chglog/RELEASE_CHANGELOG.tpl.md | gh release create -F - $release build/x86-x64_*
+local response=$(xhs POST https://gitea.antoine-langlois.net/api/v1/repos/DataHearth/config-mapper/releases Authorization:"token $GIT_CFG_MAPPER_TOKEN"  body=$(git-chglog -t .chglog/RELEASE_CHANGELOG.tpl.md) draft:=false name=$release prerelease:=false tag_name=$release)
+local release_id=$(echo $reponse | jq .id)
+
+xhs POST https://gitea.antoine-langlois.net/api/v1/repos/DataHearth/config-mapper/releases/$release_id/assets name=="x86-x64_linux_config-mapper" Authorization:"token $GIT_CFG_MAPPER_TOKEN" attachement@build/x86-x64_linux_config-mapper
+xhs POST https://gitea.antoine-langlois.net/api/v1/repos/DataHearth/config-mapper/releases/$release_id/assets name=="x86-x64_darwin_config-mapper" Authorization:"token $GIT_CFG_MAPPER_TOKEN" attachement@build/x86-x64_darwin_config-mapper
