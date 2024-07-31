@@ -2,10 +2,7 @@ package mapper
 
 import (
 	"errors"
-	"fmt"
 	"os"
-	"path"
-	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -70,33 +67,4 @@ func OpenGitRepo(c Git, l string) (*git.Repository, error) {
 	}
 
 	return repo, nil
-}
-
-func absolutePath(p string) (string, error) {
-	finalPath := p
-	if strings.Contains(finalPath, "~") {
-		h, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-
-		finalPath = strings.Replace(p, "~", h, 1)
-	}
-
-	splitted := strings.Split(finalPath, "/")
-	finalPath = ""
-	for _, s := range splitted {
-		pathPart := s
-		if strings.Contains(s, "$") {
-			env := os.Getenv(s)
-			if env == "" {
-				return "", ErrInvalidEnv
-			}
-			pathPart = env
-		}
-
-		finalPath += fmt.Sprintf("/%s", pathPart)
-	}
-
-	return path.Clean(finalPath), nil
 }
