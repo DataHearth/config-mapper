@@ -26,9 +26,19 @@ type Storage struct {
 }
 
 type Git struct {
-	Username   string `mapstructure:"username"`
-	Password   string `mapstructure:"password"`
-	Repository string `mapstructure:"repository"`
+	SSH        Ssh       `mapstructure:"ssh"`
+	BasicAuth  BasicAuth `mapstructure:"basic-auth"`
+	Repository string    `mapstructure:"repository"`
+}
+
+type BasicAuth struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+}
+
+type Ssh struct {
+	Passphrase string `mapstructure:"passphrase"`
+	PrivateKey string `mapstructure:"private-key"`
 }
 
 type PkgManagers struct {

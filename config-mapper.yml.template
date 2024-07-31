@@ -1,35 +1,44 @@
 storage:
   # Where will be the tmp folder located ? [DEFAULT: MacOS($TMPDIR/config-mapper) | Linux(/tmp/config-mapper)]
-  location: /path/to/local/repository
+  location: /path/to/folder
   git:
-    username: USERNAME
-    password: PASSWORD
-    repository: https://github.com/user/some-repo.git
+    # * by default, if ssh dict is set with it's key filled, I'll try to clone with SSH
+    repository: git@github.com:DataHearth/my-config.git
+    basic-auth:
+      username: USERNAME
+      # * NOTE: if you're having trouble with error "authentication required", you should maybe use a token access
+      # * In some cases, it's due to 2FA authentication enabled on the git hosting provided
+      password: TOKEN
+    ssh:
+      passphrase: PASSPHRASE
+      # path can be relative and can contain environment variables 
+      private-key: /path/to/private/key
 
 files:
-  - "~/.zshrc"
+  - darwin: "$LOCATION/macos/.zshrc:~/.zshrc"
+    linux: "$LOCATION/linux/.zshrc:~/.zshrc"
 
 folders:
-  - "~/.ssh"
+  - darwin: "~/.zshrc:~/.zshrc"
+    linux: "~/.zshrc:~/.zshrc"
 
 package-managers:
-  # [DEFAULT: apt, homebrew]
-  installation-order: ["apt", "homebrew"]
+  installation-order: ["homebrew"]
   homebrew:
     - bat
-    # - hexyl
-    # - fd
-    # - hyperfine
-    # - diskus
-    # - jq
-    # - k9s
-    # - go
-    # - starship
-    # - exa
-    # - httpie
-    # - neovim
-    # - nmap
-    # - pinentry
-    # - zsh
+    - hexyl
+    - fd
+    - hyperfine
+    - diskus
+    - jq
+    - k9s
+    - go
+    - starship
+    - exa
+    - httpie
+    - neovim
+    - nmap
+    - pinentry
+    - zsh
 
   apt-get:

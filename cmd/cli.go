@@ -29,11 +29,20 @@ var initCmd = &cobra.Command{
 	Long: `Initialize will retrieve your configuration folder from the source location and
 		copy it into the destination field`,
 	Run: func(cmd *cobra.Command, args []string) {
+		var config mapper.Configuration
+
+		if err := viper.Unmarshal(&config); err != nil {
+			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to decode configuration: %v\n", err)))
+			os.Exit(1)
+		}
+
 		logger.Println("initializing config-mapper folder from configuration...")
-		if _, err := mapper.OpenGitRepo(); err != nil {
+
+		if _, err := mapper.OpenGitRepo(config.Storage.Git, config.Storage.Location); err != nil {
 			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to initialize folder: %v\n", err)))
 			os.Exit(1)
 		}
+
 		logger.Printf("repository initialized at \"%v\"\n", viper.GetString("storage.location"))
 	},
 }
