@@ -3,19 +3,19 @@ package mapper
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/datahearth/config-mapper/internal/configuration"
 	"github.com/fatih/color"
+	"github.com/gernest/wow"
+	"github.com/gernest/wow/spin"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
 
 var (
-	errLogger             = log.New(os.Stderr, "", 0)
 	ErrFailedInstallation = errors.New("failed to install some packages. Please, checkout STDERR for more information")
 	ErrFailedSaving       = errors.New("failed to save some packages. Please, checkout STDERR for more information")
 	ErrBrewNotAvailable   = errors.New("homebrew is not available on your system")
@@ -23,7 +23,7 @@ var (
 )
 
 func LoadPkgs(c configuration.PkgManagers) error {
-	color.Blue("# Load folders into saved location")
+	color.Blue("\n# Installing packages")
 
 	for _, pkg := range c.InstallationOrder {
 		switch pkg {
@@ -44,7 +44,7 @@ func LoadPkgs(c configuration.PkgManagers) error {
 }
 
 func SavePkgs(cfg configuration.Configuration) error {
-	color.Blue("# Save user installed packages")
+	color.Blue("# Saving user installed packages")
 
 	for _, pkg := range cfg.PackageManagers.InstallationOrder {
 		switch pkg {
@@ -66,7 +66,7 @@ func SaveBrewPkgs(cfg configuration.Configuration) error {
 		return err
 	}
 
-	color.Blue("## Saving Homebrew packages")
+	color.Blue("\n## Saving Homebrew packages")
 
 	o, err := exec.Command("brew", "leaves", "--installed-on-request").Output()
 	if err != nil {
@@ -101,15 +101,29 @@ func installBrewPkgs(pkgs []string) error {
 
 	cmd := exec.Command("brew", "install")
 	cmd.Args = append(cmd.Args, pkgs...)
-	color.Blue("## Installing Homebrew packages")
+	color.Blue("\n## Installing Homebrew packages")
 
-	cmd.Stderr = os.Stderr
+	spinner := wow.New(os.Stdout, spin.Get(spin.Dots3), " Running...")
+
+	v := viper.GetBool("verbose")
+	if v {
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
+	} else {
+		spinner.Start()
+	}
+
 	if err := cmd.Run(); err != nil {
+		spinner.Stop()
 		PrintError("brew command failed: %v", err)
 		return err
 	}
 
-	color.Green("Packages intalled succesfully !")
+	if v {
+		// todo: find a way to clear spinner when done
+		spinner.Stop()
+	}
+	color.Green("\nPackages intalled succesfully !")
 
 	return nil
 }
@@ -127,7 +141,7 @@ func installAptPkgs(pkgs []string) error {
 	cmd := exec.Command("sudo", "apt-get", "install")
 	cmd.Args = append(cmd.Args, pkgs...)
 
-	color.Blue("## Installing aptitude packages")
+	color.Blue("\n## Installing aptitude packages")
 
 	if err := cmd.Run(); err != nil {
 		PrintError("aptitude command failed: %v", err)

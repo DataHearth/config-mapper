@@ -41,7 +41,7 @@ func NewItemsActions(items []configuration.OSLocation, storage string, repositor
 }
 
 func (e *Items) Action(action string) {
-	color.Blue("# %s", action)
+	color.Blue("# %s files and folders\n", action)
 	newLines := []string{}
 
 	for i, l := range e.locations {
