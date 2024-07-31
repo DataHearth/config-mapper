@@ -5,7 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/datahearth/config-mapper/internal/git"
+	mapper "github.com/datahearth/config-mapper/internal"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -28,46 +29,44 @@ var initCmd = &cobra.Command{
 		copy it into the destination field`,
 	Run: func(cmd *cobra.Command, args []string) {
 		logger.Println("initializing config-mapper folder from configuration...")
-		if _, err := git.OpenGitRepo(); err != nil {
-			errLogger.Printf("failed to initialize folder: %v\n", err)
+		if _, err := mapper.OpenGitRepo(); err != nil {
+			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to initialize folder: %v\n", err)))
 			os.Exit(1)
 		}
 		logger.Printf("repository initialized at \"%v\"\n", viper.GetString("storage.location"))
 	},
 }
-
-func init() {
-	cobra.OnInitialize(initConfig)
-	rootCmd.AddCommand(initCmd)
+var loadCmd = &cobra.Command{
+	Use:   "load",
+	Short: "Load your configurations onto your system",
+	Long: `Load your files, folders and package managers deps configurations onto your new
+		onto your new system based on your configuration file`,
+	Run: func(cmd *cobra.Command, args []string) {
+		viper.GetStringSlice("files")
+		viper.GetStringSlice("folder")
+		packageManagers := viper.GetStringMap("package-managers")
+		if packageManagers != nil {
+			if err := mapper.LoadPkgs(); err != nil {
+				errLogger.Printf(pterm.Red(fmt.Sprintf("error while installing packages: %v\n", err)))
+				os.Exit(1)
+			}
+		}
+	},
 }
 
-func initConfig() {
-	h, err := os.UserHomeDir()
-	if err != nil {
-		errLogger.Printf("can't get home directory through $HOME variable: %v\n", err)
-		os.Exit(1)
-	}
+func init() {
+	cobra.OnInitialize(mapper.InitConfig)
 
-	if c := os.Getenv("CONFIG_MAPPER_CFG"); c != "" {
-		viper.AddConfigPath(c)
-	} else {
-		viper.AddConfigPath(h)
-	}
+	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(loadCmd)
 
-	viper.SetConfigType("yml")
-	viper.SetConfigName("config-mapper")
+	loadCmd.PersistentFlags().Bool("disable-files", false, "files will be ignored")
+	loadCmd.PersistentFlags().Bool("disable-folders", false, "folders will be ignored")
+	loadCmd.PersistentFlags().Bool("disable-pkgs", false, "package managers will be ignored")
 
-	viper.SetDefault("storage.location", fmt.Sprintf("%s/config-mapper", os.TempDir()))
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			errLogger.Println("configuration file not found", err)
-		} else {
-			errLogger.Printf("failed to read config: %v\n", err)
-		}
-
-		os.Exit(1)
-	}
+	viper.BindPFlag("disable-files", loadCmd.Flags().Lookup("disable-files"))
+	viper.BindPFlag("disable-folders", loadCmd.Flags().Lookup("disable-folders"))
+	viper.BindPFlag("disable-pkgs", loadCmd.Flags().Lookup("disable-pkgs"))
 }
 
 func Execute() {
