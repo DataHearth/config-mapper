@@ -92,6 +92,12 @@ var saveCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}
+		if !viper.GetBool("disable-folders") {
+			if err := mapper.SaveFolders(config.Folders, config.Storage.Location); err != nil {
+				errLogger.Printf(pterm.Red(fmt.Sprintf("error while loading files: %v\n", err)))
+				os.Exit(1)
+			}
+		}
 	},
 }
 
