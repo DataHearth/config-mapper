@@ -2,13 +2,17 @@ storage:
   # Where will be the repository folder located ? [DEFAULT: MacOS($TMPDIR/config-mapper) | Linux(/tmp/config-mapper)]
   location: /path/to/folder
   git:
-    # * by default, if ssh dict is set with its keys filled, I'll try to clone with SSH
+    # username used for commit author
+    name: USERNAME
+    # email used for commit author
+    email: EMAIL
     repository: git@github.com:DataHearth/my-config.git
     basic-auth:
       username: USERNAME
       # * NOTE: if you're having trouble with error "authentication required", you should maybe use a token access
       # * In some cases, it's due to 2FA authentication enabled on the git hosting provided
       password: TOKEN
+    # * by default, if ssh dict is set with its keys filled, I'll try to clone with SSH
     ssh:
       # path can be relative and can contain environment variables
       private-key: /path/to/private/key

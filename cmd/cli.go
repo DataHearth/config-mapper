@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"time"
 
 	mapper "github.com/datahearth/config-mapper/internal"
 	"github.com/pterm/pterm"
@@ -38,7 +40,7 @@ var initCmd = &cobra.Command{
 
 		logger.Println("initializing config-mapper folder from configuration...")
 
-		if _, err := mapper.OpenGitRepo(config.Storage.Git, config.Storage.Location); err != nil {
+		if _, err := mapper.NewRepository(config.Storage.Git, config.Storage.Path); err != nil {
 			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to initialize folder: %v\n", err)))
 			os.Exit(1)
 		}
@@ -59,7 +61,7 @@ var loadCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		el := mapper.NewElement([]mapper.ItemLocation{}, config.Storage.Location)
+		el := mapper.NewElement([]mapper.ItemLocation{}, config.Storage.Path)
 
 		if !viper.GetBool("load-disable-files") {
 			el.AddItems(config.Files)
@@ -88,13 +90,17 @@ var saveCmd = &cobra.Command{
 		 saved location based on your configuration file`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var config mapper.Configuration
-
 		if err := viper.Unmarshal(&config); err != nil {
 			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to decode configuration: %v\n", err)))
 			os.Exit(1)
 		}
 
-		el := mapper.NewElement([]mapper.ItemLocation{}, config.Storage.Location)
+		repo, err := mapper.NewRepository(config.Storage.Git, config.Storage.Path)
+		if err != nil {
+			errLogger.Printf(pterm.Red(fmt.Sprintf("failed to open repository at %s: %v\n", config.Storage.Path, err)))
+			os.Exit(1)
+		}
+		el := mapper.NewElement([]mapper.ItemLocation{}, config.Storage.Path)
 
 		if !viper.GetBool("save-disable-files") {
 			el.AddItems(config.Files)
@@ -113,6 +119,18 @@ var saveCmd = &cobra.Command{
 				errLogger.Printf(pterm.Red(err))
 				os.Exit(1)
 			}
+		}
+
+		if viper.GetBool("push") {
+			s, _ := pterm.DefaultSpinner.WithShowTimer(true).WithRemoveWhenDone(false).Start("Pushing changes to remote repository")
+
+			if err := repo.PushChanges(viper.GetString("message")); err != nil {
+				errLogger.Printf(pterm.Red(fmt.Sprintf("failed to push changes to repository: %v\n", err)))
+				os.Exit(1)
+			}
+
+			s.Stop()
+			s.Success("Changes pushed")
 		}
 	},
 }
@@ -136,9 +154,13 @@ func init() {
 	saveCmd.PersistentFlags().Bool("disable-files", false, "files will be ignored")
 	saveCmd.PersistentFlags().Bool("disable-folders", false, "folders will be ignored")
 	saveCmd.PersistentFlags().Bool("disable-pkgs", false, "package managers will be ignored")
+	saveCmd.Flags().BoolP("push", "p", false, "new configurations will be committed and pushed")
+	saveCmd.Flags().StringP("message", "m", strconv.FormatInt(time.Now().Unix(), 10), "combined with --push to set a commit message")
 	viper.BindPFlag("save-disable-files", saveCmd.PersistentFlags().Lookup("disable-files"))
 	viper.BindPFlag("save-disable-folders", saveCmd.PersistentFlags().Lookup("disable-folders"))
 	viper.BindPFlag("save-disable-pkgs", saveCmd.PersistentFlags().Lookup("disable-pkgs"))
+	viper.BindPFlag("push", saveCmd.Flags().Lookup("push"))
+	viper.BindPFlag("message", saveCmd.Flags().Lookup("message"))
 }
 
 func Execute() {

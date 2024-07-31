@@ -23,14 +23,16 @@ type ItemLocation struct {
 }
 
 type Storage struct {
-	Location string `mapstructure:"location" yaml:"location"`
-	Git      Git    `mapstructure:"git" yaml:"git"`
+	Path string `mapstructure:"location" yaml:"location"`
+	Git  Git    `mapstructure:"git" yaml:"git"`
 }
 
 type Git struct {
-	Repository string    `mapstructure:"repository" yaml:"repository"`
-	BasicAuth  BasicAuth `mapstructure:"basic-auth" yaml:"basic-auth"`
-	SSH        Ssh       `mapstructure:"ssh" yaml:"ssh"`
+	URL       string    `mapstructure:"repository" yaml:"repository"`
+	Name      string    `mapstructure:"name" yaml:"name"`
+	Email     string    `mapstructure:"email" yaml:"email"`
+	BasicAuth BasicAuth `mapstructure:"basic-auth" yaml:"basic-auth"`
+	SSH       Ssh       `mapstructure:"ssh" yaml:"ssh"`
 }
 
 type BasicAuth struct {
