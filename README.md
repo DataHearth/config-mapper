@@ -1,7 +1,7 @@
 # config-mapper
 
-`config-mapper` is CLI utility tool to help you manage your configuration between systems.  
-It provides a set of tools to load your configuration from a system, save it on a git repository and then save it to a new system. This configuration can be a set of files, folders or even dependencies.
+`config-mapper` is CLI utility tool to help you manage your configuration between UNIX systems.  
+It provides a set of tools to load your configuration from a system, save it into a git repository and then save it to a new system. This configuration can be a set of files, folders or even dependencies.
 
 ## Usage
 
@@ -13,12 +13,36 @@ The system is detected automatically. You just need to specify whether the relat
 
 You can get a configuration template [here](https://raw.githubusercontent.com/DataHearth/config-mapper/main/.config-mapper.yml.template).
 
+### Installation
+
+Using a pre-build binary:
+
+- `wget`
+
+```bash
+wget https://github.com/DataHearth/config-mapper/releases/download/{RELEASE}/x86-x64_{linux|darwin}_config-mapper -O $HOME/.local/bin/
+```
+
+- `gh`
+
+```bash
+gh release download -r DataHearth/config-mapper {RELEASE} -d $HOME/.local/bin/ -p "x86-x64_{linux|darwin}_config-mapper"
+```
+
+Building from source:
+
+```bash
+git clone git@github.com:datahearth/config-mapper.git
+cd config-mapper
+go build -o $HOME/.local/bin/config-mapper
+```
+
 ### Setup
 
 Create a file called `.config-mapper.yml` in your `home` directory (it is the default search path for config-mapper).  
-If you wish to move it to another directory, you can have to choice to inform the tool. By either set an environment like this one: `CONFIG_MAPPER_CFG=/path/to/config/.config-mapper.yml`. Or by providing the `-c /path/to/config/.config-mapper.yml` flag to the tool.
+If you wish to move it to another directory, you can choose by either setting an environment: `CONFIG_MAPPER_CFG=/path/to/config/.config-mapper.yml` or by using the `-c /path/to/config/.config-mapper.yml` flag.
 
-Once the configuratio file created, run this command to initialize the repository localy:
+Once the configuration file created, run this command to initialize the repository locally:
 
 ```bash
 config-mapper init
@@ -82,13 +106,13 @@ foo/bar
 egg
 ```
 
-If `homebrew` is provided in the `installation-order` (default: `["apt", "homebrew"]`), it will override the `homebrew` field with all user installed packages (`brew leaves --installed-on-request`). The same principle will be implemented with `aptitude`.
+If `homebrew` is provided in the `installation-order` (default: `["apt", "homebrew"]`), it will override the `homebrew` field with all user installed packages (`brew leaves --installed-on-request`). The same principle will be implemented with `Advanced Package Tool`.
 
 template for your configuration:
 
 ```yaml
 # NOTE: the $LOCATION if refering to the "storage.location" path. It'll be replaced automatically
-# The left part of ":" is your repository location and right part when it should be on your system
+# The left part of ":" is your repository location and right part is on your system
 files:
   - darwin: "$LOCATION/macos/.zshrc:~/.zshrc"
     linux: "$LOCATION/linux/.zshrc:~/.zshrc"
