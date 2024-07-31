@@ -1,8 +1,8 @@
 storage:
-  # Where will be the tmp folder located ? [DEFAULT: MacOS($TMPDIR/config-mapper) | Linux(/tmp/config-mapper)]
+  # Where will be the repository folder located ? [DEFAULT: MacOS($TMPDIR/config-mapper) | Linux(/tmp/config-mapper)]
   location: /path/to/folder
   git:
-    # * by default, if ssh dict is set with it's key filled, I'll try to clone with SSH
+    # * by default, if ssh dict is set with its keys filled, I'll try to clone with SSH
     repository: git@github.com:DataHearth/my-config.git
     basic-auth:
       username: USERNAME
@@ -10,17 +10,19 @@ storage:
       # * In some cases, it's due to 2FA authentication enabled on the git hosting provided
       password: TOKEN
     ssh:
-      passphrase: PASSPHRASE
-      # path can be relative and can contain environment variables 
+      # path can be relative and can contain environment variables
       private-key: /path/to/private/key
+      passphrase: PASSPHRASE
 
+# NOTE: the $LOCATION if refering to the "storage.location" path. It'll be replaced automatically
+# The left part of ":" is your repository location and right part when it should be on your system
 files:
   - darwin: "$LOCATION/macos/.zshrc:~/.zshrc"
     linux: "$LOCATION/linux/.zshrc:~/.zshrc"
 
 folders:
-  - darwin: "~/.zshrc:~/.zshrc"
-    linux: "~/.zshrc:~/.zshrc"
+  - darwin: "$LOCATION/macos/.config:~/.config"
+    linux: "$LOCATION/macos/.config:~/.config"
 
 package-managers:
   installation-order: ["homebrew"]
@@ -41,4 +43,4 @@ package-managers:
     - pinentry
     - zsh
 
-  apt-get:
+  apt-get: []
