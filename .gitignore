@@ -1,4 +1,5 @@
-.config-mapper.yml
-build
-.DS_Store
 .env
+.DS_STORE
+build
+dist/
+.config-mapper.yml
