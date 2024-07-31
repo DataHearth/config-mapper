@@ -1,0 +1,34 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --force --tags
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.17
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Release
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+        run: |
+          go install github.com/goreleaser/goreleaser@latest
+          go install github.com/git-chglog/git-chglog/cmd/git-chglog@latest
+          goreleaser release --clean --release-notes <(git-chglog -t .chglog/RELEASE_CHANGELOG.tpl.md)
