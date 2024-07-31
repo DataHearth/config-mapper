@@ -56,7 +56,30 @@ config-mapper save
 
 All defined files and folders will be copied inside your repository.
 
-If you want to exclude one part of your configuration file (files, folders, package-managers), you can use these flags to ignore them `--disable-files` `--disable-folders` `--disable-pkgs`
+If you want to exclude one part of your configuration file (files, folders, package-managers), you can use these flags to ignore them `--disable-files` `--disable-folders` `--disable-pkgs`.
+
+You can also exclude files and folders from a given directory with a `.gitignore` like file named `.ignore`. Put it in the root directory of an included folder and add relative path to exclude (does not support glob for now). E.g:
+
+```bash
+Permissions Size User    Date Modified Name
+drwxr-xr-x     - antoine  1 Jun 20:28  ../demo
+.rw-r--r--    12 antoine  1 Jun 20:28  ├── .ignore
+drwxr-xr-x     - antoine  1 Jun 20:28  ├── egg
+.rw-r--r--     0 antoine  1 Jun 20:28  │  └── bar.py
+.rw-r--r--     0 antoine  1 Jun 20:26  ├── example.py
+drwxr-xr-x     - antoine  1 Jun 20:27  └── foo
+.rw-r--r--     0 antoine  1 Jun 20:24     ├── bar
+.rw-r--r--     0 antoine  1 Jun 20:27     └── demo.py
+```
+
+`.ignore` content:
+```
+# bar file will be ignored
+foo/bar
+
+# egg folder will be ignore
+egg
+```
 
 If `homebrew` is provided in the `installation-order` (default: `["apt", "homebrew"]`), it will override the `homebrew` field with all user installed packages (`brew leaves --installed-on-request`). The same principle will be implemented with `aptitude`.
 
@@ -107,6 +130,8 @@ The same ignore flags are used in the `save` command.
 
 ## TO-DO
 
+- [X] add `.ignore` file to ignore content inside directory
+- [ ] optimisation over speed and memory
 - [ ] load configuration though SSH
 - [ ] save configuration though SSH
 - add more storage options
