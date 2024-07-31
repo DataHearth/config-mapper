@@ -97,11 +97,17 @@ func ConfigPaths(os configuration.OSLocation, location string) (string, string, 
 
 	switch runtime.GOOS {
 	case "linux":
+		if os.Linux == "" {
+			return "", "", nil
+		}
 		src, dst, err = getPaths(os.Linux, location)
 		if err != nil {
 			return "", "", err
 		}
 	case "darwin":
+		if os.Darwin == "" {
+			return "", "", nil
+		}
 		src, dst, err = getPaths(os.Darwin, location)
 		if err != nil {
 			return "", "", err
