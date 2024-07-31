@@ -29,8 +29,10 @@ folders:
     linux: "$LOCATION/macos/.config:~/.config"
 
 package-managers:
-  installation-order: ["homebrew"] # available: brew, pip (pip check also for pip3), cargo, apt, npm, go
-  homebrew:
+  # available: brew, pip (pip check also for pip3), cargo, apt, npm, go
+  installation-order:
+    - brew
+  brew:
     - bat
     - hexyl
     - fd
